@@ -1,0 +1,102 @@
+from django.urls import path
+from django.conf import settings
+from django.contrib.auth.views import LoginView, PasswordChangeDoneView
+from django.urls import reverse_lazy
+
+from . import views
+
+
+urlpatterns = [
+    path('', views.recipes, name='home'),
+    path('home/', views.recipes, name='home'),
+    path('recipes/', views.recipes, name='recipes'),
+    path('recipe/<slug:slug>/', views.recipe_detail, name='recipe-detail'),
+    # Pre-slug URLs. The <int:pk> route must come first: <slug:> also matches
+    # bare digits and would otherwise swallow every old numeric link.
+    path('recipe-detail/<int:pk>/', views.recipe_detail_legacy_id, name='recipe-detail-legacy-id'),
+    path('recipe-detail/<slug:slug>/', views.recipe_detail_legacy_slug, name='recipe-detail-legacy-slug'),
+    path('recipe-add/', views.recipe_add, name='recipe-add'),
+    path('recipe-add-url/', views.recipe_add_url, name='recipe-add-url'),
+    path('process-url-batch/', views.process_url_batch, name='process-url-batch'),
+    path('recipe-import/', views.recipe_import, name='recipe-import'),
+    path('recipe-import/configure/', views.recipe_import_configure, name='recipe-import-configure'),
+    path('recipe-export/', views.recipe_export, name='recipe-export'),
+    path('recipe-update/<int:pk>/', views.recipe_update, name='recipe-update'),
+    path('recipe-delete/<int:pk>/', views.recipe_delete, name='recipe-delete'),
+    path('recipe/<int:pk>/make-public/', views.recipe_make_public_toggle, name='recipe-make-public'),
+    path('recipe/<int:pk>/toggle-share-notes/', views.recipe_toggle_share_notes, name='recipe-toggle-share-notes'),
+    path('recipe/<int:pk>/favorite/', views.favorite_toggle, name='favorite-toggle'),
+    path('r/<str:token>/<slug:slug>/', views.recipe_public, name='recipe-public'),
+    path('get-progress/<str:task_id>/', views.get_progress, name='get-progress'),
+    path('misc-tools/', views.misc_tools, name='misc-tools'),
+    path('shared-recipes/', views.shared_recipes, name='shared-recipes'),
+    path('shared-recipes/list/', views.shared_recipes_list, name='shared-recipes-list'),
+    path('shared-recipes/<int:pk>/unshare/', views.shared_recipe_unshare, name='shared-recipe-unshare'),
+    path('audit-log/', views.audit_log, name='audit-log'),
+    path('audit-log/list/', views.audit_log_list, name='audit-log-list'),
+    path('audit-log/retention/', views.audit_retention, name='audit-retention'),
+    path('find-duplicates/', views.find_duplicates, name='find-duplicates'),
+    path('find-duplicates/start/', views.find_duplicates_start, name='find-duplicates-start'),
+    path('find-duplicates/delete/<int:pk>/', views.find_duplicates_delete, name='find-duplicates-delete'),
+    path('recipes/<int:recipe_id>/tags/', views.update_tags, name='update-tags'),
+    path('tags-validate/', views.tags_validate, name='tags-validate'),
+    path('tags-suggest/', views.tags_suggest, name='tags-suggest'),
+    path('tags/manage/', views.tag_manage, name='tag-manage'),
+    path('tags/manage/list/', views.tag_manage_list, name='tag-manage-list'),
+    path('tags/manage/add/', views.tag_add, name='tag-add'),
+    path('tags/manage/<int:pk>/edit/', views.tag_edit, name='tag-edit'),
+    path('tags/manage/<int:pk>/delete/', views.tag_delete, name='tag-delete'),
+    path('tags/manage/remove-unused/', views.tag_remove_unused, name='tag-remove-unused'),
+    path('scrape-images/', views.scrape_images, name='scrape-images'),
+    path('process-image-scrape/', views.process_image_scrape, name='process-image-scrape'),
+    path('delete-all-recipes/', views.delete_all_recipes, name='delete-all-recipes'),
+    path('recipe-delete/<int:pk>/confirm/', views.recipe_delete_confirm, name='recipe-delete-confirm'),
+    path('meal-planner/', views.meal_planner, name='meal-planner'),
+    path('meal-planner/recipe-picker/', views.meal_planner_recipe_picker, name='meal-planner-recipe-picker'),
+    path('meal-planner/add/', views.meal_plan_add, name='meal-plan-add'),
+    path('meal-planner/remove/<int:pk>/', views.meal_plan_remove, name='meal-plan-remove'),
+    path('meal-planner/move/', views.meal_plan_move, name='meal-plan-move'),
+    path('meal-planner/workspace/add/<int:pk>/', views.workspace_add, name='workspace-add'),
+    path('meal-planner/workspace/add-custom/', views.workspace_add_custom, name='workspace-add-custom'),
+    path('meal-planner/workspace/remove/<int:pk>/', views.workspace_remove, name='workspace-remove'),
+    path('meal-planner/workspace/remove-item/<int:pk>/', views.workspace_remove_item, name='workspace-remove-item'),
+    path('meal-planner/freezer/add/<int:pk>/', views.freezer_add, name='freezer-add'),
+    path('meal-planner/freezer/add-custom/', views.freezer_add_custom, name='freezer-add-custom'),
+    path('meal-planner/freezer/remove-item/<int:pk>/', views.freezer_remove_item, name='freezer-remove-item'),
+    path('users/', views.users, name='users'),
+    path('users/add/', views.user_add, name='user-add'),
+    path('users/<int:pk>/edit/', views.user_edit, name='user-edit'),
+    path('users/<int:pk>/password/', views.user_set_password, name='user-set-password'),
+    path('users/<int:pk>/delete/', views.user_delete, name='user-delete'),
+    path('roles/', views.roles, name='roles'),
+    path('roles/add/', views.role_add, name='role-add'),
+    path('roles/<int:pk>/edit/', views.role_edit, name='role-edit'),
+    path('roles/<int:pk>/delete/', views.role_delete, name='role-delete'),
+    path('households/', views.households, name='households'),
+    path('households/add/', views.household_add, name='household-add'),
+    path('households/<int:pk>/edit/', views.household_edit, name='household-edit'),
+    path('households/<int:pk>/delete/', views.household_delete, name='household-delete'),
+    path('platform-settings/', views.platform_settings, name='platform-settings'),
+    path('platform-settings/api/', views.api_settings, name='api-settings'),
+    path('platform-settings/api-sessions/<int:pk>/revoke/', views.api_session_revoke, name='api-session-revoke'),
+    path('whats-new/dismiss/', views.whats_new_dismiss, name='whats-new-dismiss'),
+    path('profile/', views.profile, name='profile'),
+    path('profile/edit/', views.profile_edit, name='profile-edit'),
+    path('profile/api-sessions/<int:pk>/revoke/', views.profile_api_session_revoke, name='profile-api-session-revoke'),
+    path('api-reference/', views.api_reference, name='api-reference'),
+    path('preferences/', views.preferences, name='preferences'),
+    path('preferences/theme-adopt/', views.theme_adopt, name='theme-adopt'),
+    path('profile/password/', views.PasswordChange.as_view(
+        success_url=reverse_lazy('password-change-done'),
+    ), name='password-change'),
+    path('profile/password/done/', PasswordChangeDoneView.as_view(
+        template_name='main/password_change_done.html',
+        extra_context={'app_version': settings.VERSION}
+    ), name='password-change-done'),
+    path('login/', LoginView.as_view(
+        template_name='registration/login.html',
+        extra_context={'app_version': settings.VERSION}
+    ), name='login'),
+]
+
+# Media files are served from S3 in all environments; no local static() override needed.

@@ -1,0 +1,101 @@
+<div class="p-3">
+  {% if mode == 'workspace' %}
+  <!-- Stage your own custom card in the workspace -->
+  <div class="input-group mb-1">
+    <input type="text"
+           id="workspace-custom"
+           class="form-control"
+           placeholder="Type your own (e.g. Leftovers, Eat out)…"
+           name="custom_text"
+           maxlength="200"
+           autocomplete="off"
+           hx-post="{% url 'workspace-add-custom' %}"
+           hx-target="#workspace-container"
+           hx-swap="outerHTML"
+           hx-trigger="keyup[key=='Enter']">
+    <button class="btn btn-outline-primary"
+            type="button"
+            hx-post="{% url 'workspace-add-custom' %}"
+            hx-include="#workspace-custom"
+            hx-target="#workspace-container"
+            hx-swap="outerHTML">
+      Add
+    </button>
+  </div>
+  <div class="form-text small mb-3">(Max 200 characters)</div>
+
+  <div class="text-center text-muted small mb-3">— or pick a recipe —</div>
+  {% elif mode == 'freezer' %}
+  <!-- Add your own item to the freezer -->
+  <div class="input-group mb-1">
+    <input type="text"
+           id="freezer-custom"
+           class="form-control"
+           placeholder="Type an item (e.g. corn, ground beef)…"
+           name="custom_text"
+           maxlength="200"
+           autocomplete="off"
+           hx-post="{% url 'freezer-add-custom' %}"
+           hx-target="#freezer-strip"
+           hx-swap="outerHTML"
+           hx-trigger="keyup[key=='Enter']">
+    <button class="btn btn-outline-primary"
+            type="button"
+            hx-post="{% url 'freezer-add-custom' %}"
+            hx-include="#freezer-custom"
+            hx-target="#freezer-strip"
+            hx-swap="outerHTML">
+      Add
+    </button>
+  </div>
+  <div class="form-text small mb-3">(Max 200 characters)</div>
+
+  <div class="text-center text-muted small mb-3">— or pick a recipe —</div>
+  {% else %}
+  <!-- Type your own entry -->
+  <div class="input-group mb-1">
+    <input type="text"
+           id="recipe-picker-custom"
+           class="form-control"
+           placeholder="Type your own (e.g. Leftovers, Eat out)…"
+           name="custom_text"
+           value="{{ custom_text }}"
+           maxlength="200"
+           autocomplete="off"
+           {% if custom_text %}autofocus{% endif %}
+           hx-post="{% url 'meal-plan-add' %}"
+           hx-vals='{"date": "{{ date }}", "slot": "{{ slot_num }}", "nav_date": "{{ nav_date }}"}'
+           hx-target="#calendar-container"
+           hx-swap="innerHTML"
+           hx-trigger="keyup[key=='Enter']">
+    <button class="btn btn-outline-primary"
+            type="button"
+            hx-post="{% url 'meal-plan-add' %}"
+            hx-include="#recipe-picker-custom"
+            hx-vals='{"date": "{{ date }}", "slot": "{{ slot_num }}", "nav_date": "{{ nav_date }}"}'
+            hx-target="#calendar-container"
+            hx-swap="innerHTML">
+      Add
+    </button>
+  </div>
+  <div class="form-text small mb-3">(Max 200 characters)</div>
+
+  <div class="text-center text-muted small mb-3">— or pick a recipe —</div>
+  {% endif %}
+
+  <input type="text"
+         id="recipe-picker-search"
+         class="form-control mb-3"
+         placeholder="Search recipes..."
+         name="search"
+         autocomplete="off"
+         {% if not custom_text %}autofocus{% endif %}
+         hx-get="{% url 'meal-planner-recipe-picker' %}?mode={{ mode }}&date={{ date }}&slot={{ slot_num }}&nav_date={{ nav_date }}"
+         hx-trigger="input changed delay:300ms"
+         hx-target="#recipe-picker-list"
+         hx-swap="innerHTML">
+
+  <div id="recipe-picker-list" style="max-height: 420px; overflow-y: auto;">
+    {% include 'partials/meal_planner_recipe_list.html' %}
+  </div>
+</div>

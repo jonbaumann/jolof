@@ -1,0 +1,49 @@
+{% extends 'main/base.html' %}
+{% block title %}Edit {{ target.username }}{% endblock %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="mx-auto" style="max-width: 640px;">
+    <h3>Edit {{ target.username }}{% if is_self %} <span class="badge text-bg-secondary fs-6 align-middle">You</span>{% endif %}</h3>
+
+    {% include 'partials/messages.html' %}
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Account</h5>
+            <form method="post" action="{% url 'user-edit' target.pk %}">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{% url 'users' %}" class="btn btn-outline-secondary">Back to Users</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4" id="set-password">
+        <div class="card-body">
+            <h5 class="card-title">Reset password</h5>
+            <p class="text-secondary small">
+                Sets a new password straight away. Tell {{ target.first_name|default:target.username }} what it is;
+                {% if is_self %}your other sessions{% else %}they{% endif %} will be logged out everywhere else.
+            </p>
+            <form method="post" action="{% url 'user-set-password' target.pk %}">
+                {% csrf_token %}
+                {{ password_form|crispy }}
+                <button type="submit" class="btn btn-warning">Set Password</button>
+            </form>
+        </div>
+    </div>
+
+    {% if not is_self %}
+    <div class="card mt-4 border-danger">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <h5 class="card-title mb-1">Delete user</h5>
+                <div class="text-secondary small">To stop someone logging in but keep their history, untick Active instead.</div>
+            </div>
+            <a href="{% url 'user-delete' target.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete…</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

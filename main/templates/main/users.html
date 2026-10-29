@@ -1,0 +1,66 @@
+{% extends 'main/base.html' %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h3 class="mb-0">Users</h3>
+    <a href="{% url 'user-add' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add User</a>
+</div>
+<p class="text-secondary mt-2">
+    Everyone with an account on Jolof. A user's <a href="{% url 'roles' %}">role</a> decides what they can see and change;
+    their <a href="{% url 'households' %}">household</a>, whose meal planner they share.
+</p>
+
+{% include 'partials/messages.html' %}
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Username</th>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Household</th>
+                <th scope="col">Status</th>
+                <th scope="col">Last login</th>
+                <th scope="col" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for account in user_list %}
+            <tr{% if not account.is_active %} class="text-secondary"{% endif %}>
+                <td>
+                    {{ account.username }}
+                    {% if account.pk == user.pk %}<span class="badge text-bg-secondary ms-1">You</span>{% endif %}
+                </td>
+                <td>{{ account.get_full_name|default:"—" }}</td>
+                <td class="text-break">{{ account.email|default:"—" }}</td>
+                <td>{{ account.profile.role|default:"—" }}</td>
+                <td>{{ account.profile.household|default:"—" }}</td>
+                <td>
+                    {% if account.is_active %}
+                        <span class="badge text-bg-success">Active</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary">Inactive</span>
+                    {% endif %}
+                    {% if account.profile.must_change_password %}
+                        <i class="bi bi-key text-warning ms-1" data-bs-toggle="tooltip" title="Must change password at next login"></i>
+                    {% endif %}
+                </td>
+                <td class="text-nowrap small">{{ account.last_login|date:"j M Y, H:i"|default:"Never" }}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{% url 'user-edit' account.pk %}" class="btn btn-sm btn-outline-primary" title="Edit {{ account.username }}">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    {% if account.pk != user.pk %}
+                    <a href="{% url 'user-delete' account.pk %}" class="btn btn-sm btn-outline-danger" title="Delete {{ account.username }}">
+                        <i class="bi bi-trash"></i> Delete
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

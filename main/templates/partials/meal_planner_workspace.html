@@ -1,0 +1,33 @@
+<div id="workspace-container"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="card shadow-sm mb-4 planner-week-card">
+    <div class="card-header py-1 d-flex align-items-center justify-content-between">
+      <ul class="nav nav-tabs card-header-tabs mb-0" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="ws-tab" data-bs-toggle="tab"
+                  data-bs-target="#ws-pane" type="button" role="tab"
+                  aria-controls="ws-pane" aria-selected="true">
+            <i class="bi bi-collection"></i> Workspace
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="fz-tab" data-bs-toggle="tab"
+                  data-bs-target="#fz-pane" type="button" role="tab"
+                  aria-controls="fz-pane" aria-selected="false">
+            <i class="bi bi-snow"></i> Freezer
+          </button>
+        </li>
+      </ul>
+      <span class="text-muted small d-none d-sm-inline">Drag a card onto a slot</span>
+    </div>
+    <div class="card-body p-2">
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="ws-pane" role="tabpanel" aria-labelledby="ws-tab">
+          {% include 'partials/meal_planner_workspace_strip.html' %}
+        </div>
+        <div class="tab-pane fade" id="fz-pane" role="tabpanel" aria-labelledby="fz-tab">
+          {% include 'partials/meal_planner_freezer_strip.html' %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

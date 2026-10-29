@@ -1,0 +1,67 @@
+{% extends 'main/base.html' %}
+{% block title %}Roles{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h3 class="mb-0">Roles</h3>
+    <a href="{% url 'role-add' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Role</a>
+</div>
+<p class="text-secondary mt-2">
+    Each user has one role. System roles are built in and can't be changed; custom roles can have any mix of
+    permissions. Hover a permission to see what it allows.
+</p>
+
+{% include 'partials/messages.html' %}
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Role</th>
+                <th scope="col">Permissions</th>
+                <th scope="col" class="text-center">Users</th>
+                <th scope="col" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for role in role_list %}
+            <tr>
+                <td style="min-width: 12rem;">
+                    <div class="fw-semibold">
+                        {{ role.name }}
+                        {% if role.is_system %}<span class="badge text-bg-secondary ms-1">System</span>{% endif %}
+                    </div>
+                    {% if role.description %}<div class="text-secondary small">{{ role.description }}</div>{% endif %}
+                </td>
+                <td>
+                    <div class="d-flex flex-wrap gap-1">
+                    {% for permission in role.granted %}
+                        <span class="badge {% if permission.future %}badge-future{% else %}text-bg-primary{% endif %}"
+                              data-bs-toggle="tooltip"
+                              title="{{ permission.description }}{% if permission.future %} (Not used yet.){% endif %}">{{ permission.label }}</span>
+                    {% empty %}
+                        <span class="text-secondary">None</span>
+                    {% endfor %}
+                    </div>
+                </td>
+                <td class="text-center">{{ role.user_count }}</td>
+                <td class="text-end text-nowrap">
+                    {% if role.is_system %}
+                        <span class="text-secondary small">Built in</span>
+                    {% else %}
+                        <a href="{% url 'role-edit' role.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>
+                        <form method="post" action="{% url 'role-delete' role.pk %}" class="d-inline"
+                              onsubmit="return confirm('Delete the {{ role.name|escapejs }} role?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    {% if role.user_count %}disabled title="Assigned to {{ role.user_count }} user{{ role.user_count|pluralize }}"{% endif %}>
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

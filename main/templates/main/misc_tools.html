@@ -1,0 +1,26 @@
+{% extends 'main/base.html' %} 
+{% block title %}Misc Tools{% endblock %}
+{% block content %}
+<h3>Misc. Tools</h3>
+<div class="list-group">
+  <div class="list-group-item list-group-item-action active">
+    Recipes
+  </div>
+  {% if can.recipe_read_write %}
+  <a href="{% url 'find-duplicates' %}" class="list-group-item list-group-item-action">Find Duplicates</a>
+  {% endif %}
+  <a href="{% url 'shared-recipes' %}" class="list-group-item list-group-item-action">Shared Recipes</a>
+  {% if can.recipe_read_write %}
+  <a href="#" class="list-group-item list-group-item-action">Batch Edit (ToDo)</a>
+  <a href="/scrape-images/" class="list-group-item list-group-item-action">Scrape Images</a>
+  {% endif %}
+</div>
+{% if can.recipe_read_write %}
+<div class="list-group pt-4">
+  <div class="list-group-item list-group-item-action active">
+    Tags
+  </div>
+  <a href="{% url 'tag-manage' %}" class="list-group-item list-group-item-action">Manage Tags</a>
+</div>
+{% endif %}
+{% endblock %}

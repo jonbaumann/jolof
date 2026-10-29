@@ -1,0 +1,26 @@
+{% extends 'main/base.html' %}
+{% block title %}Delete {{ target.username }}{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width: 640px;">
+    <h3>Delete {{ target.username }}</h3>
+    {% if blocker %}
+        <div class="alert alert-warning mt-3"><i class="bi bi-exclamation-triangle"></i> {{ blocker }}</div>
+        <a href="{% url 'users' %}" class="btn btn-outline-secondary">Back to Users</a>
+    {% else %}
+        <div class="alert alert-danger mt-3">
+            <p class="mb-2">This permanently deletes the account. It can't be undone.</p>
+            <ul class="mb-0">
+                <li>Their {{ favorite_count }} favorite{{ favorite_count|pluralize }} and personal meal planner go with them.</li>
+                <li>Anything they added to a shared meal planner stays.</li>
+                <li>The audit log keeps their past changes, under their name.</li>
+            </ul>
+        </div>
+        <p class="text-secondary">To stop them logging in but keep everything, <a href="{% url 'user-edit' target.pk %}">mark them inactive</a> instead.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Delete {{ target.username }}</button>
+            <a href="{% url 'users' %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

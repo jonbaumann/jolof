@@ -1,0 +1,62 @@
+{% extends 'main/base.html' %}
+{% block title %}Households{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h3 class="mb-0">Households</h3>
+    <a href="{% url 'household-add' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Household</a>
+</div>
+<p class="text-secondary mt-2">
+    People in a household share one meal planner, workspace and freezer. Each user is in one household at most;
+    anyone in none has a planner of their own.
+</p>
+
+{% include 'partials/messages.html' %}
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Household</th>
+                <th scope="col">Members</th>
+                <th scope="col" class="text-center">Planner entries</th>
+                <th scope="col" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for household in household_list %}
+            <tr>
+                <td class="fw-semibold">{{ household.name }}</td>
+                <td>
+                    {% for member in household.member_list %}
+                        <a href="{% url 'user-edit' member.pk %}" class="badge text-bg-primary text-decoration-none">{{ member.username }}</a>
+                    {% empty %}
+                        <span class="text-secondary">Nobody</span>
+                    {% endfor %}
+                </td>
+                <td class="text-center">{{ household.entry_count }}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{% url 'household-edit' household.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>
+                    <form method="post" action="{% url 'household-delete' household.pk %}" class="d-inline"
+                          onsubmit="return confirm('Delete the {{ household.name|escapejs }} household? Its meal planner, workspace and freezer will be deleted too.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                {% if household.member_list %}disabled title="Has {{ household.member_list|length }} member{{ household.member_list|length|pluralize }}"{% endif %}>
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-secondary">No households yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if unassigned %}
+<p class="text-secondary small">
+    Own planner:
+    {% for account in unassigned %}<a href="{% url 'user-edit' account.pk %}">{{ account.username }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+</p>
+{% endif %}
+{% endblock %}

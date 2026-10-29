@@ -1,0 +1,86 @@
+{% extends 'main/base.html' %}
+{% block title %}Audit Log{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h3 class="mb-0">Audit Log</h3>
+    {% if can.platform_admin %}
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'platform-settings' %}">
+        <i class="bi bi-gear"></i> Retention
+    </a>
+    {% endif %}
+</div>
+<p class="text-secondary mt-2">
+    Every change to recipes, tags, the meal planner, and user accounts, newest first.
+</p>
+
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="position-relative">
+            <label for="audit_search" class="form-label mb-1 text-secondary small">Search</label>
+            <input
+                type="search"
+                name="audit_search"
+                id="audit_search"
+                class="form-control"
+                placeholder="Recipe, tag, or person..."
+                value="{{ audit_search }}"
+                autocomplete="off"
+                hx-get="{% url 'audit-log-list' %}"
+                hx-trigger="keyup changed delay:300ms, search"
+                hx-include="#audit-filters, #audit_per_page"
+                hx-target="#audit-log-body"
+                hx-indicator="#audit-search-indicator"
+            >
+            <div id="audit-search-indicator" class="htmx-indicator spinner-border spinner-border-sm position-absolute"
+                 style="top: 38px; right: 15px;" role="status"></div>
+        </div>
+    </div>
+
+    <div id="audit-filters" class="col-md-8">
+        <div class="row g-3">
+            <div class="col-6 col-md-4">
+                <label for="object_type" class="form-label mb-1 text-secondary small">Type</label>
+                <select name="object_type" id="object_type" class="form-select"
+                        hx-get="{% url 'audit-log-list' %}"
+                        hx-include="#audit_search, #audit-filters, #audit_per_page"
+                        hx-target="#audit-log-body">
+                    <option value="">All types</option>
+                    {% for type_name in object_types %}
+                        <option value="{{ type_name }}" {% if filters.object_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-4">
+                <label for="action" class="form-label mb-1 text-secondary small">Action</label>
+                <select name="action" id="action" class="form-select"
+                        hx-get="{% url 'audit-log-list' %}"
+                        hx-include="#audit_search, #audit-filters, #audit_per_page"
+                        hx-target="#audit-log-body">
+                    <option value="">All actions</option>
+                    {% for value, display in actions %}
+                        <option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-4">
+                <label for="actor" class="form-label mb-1 text-secondary small">Who</label>
+                <select name="actor" id="actor" class="form-select"
+                        hx-get="{% url 'audit-log-list' %}"
+                        hx-include="#audit_search, #audit-filters, #audit_per_page"
+                        hx-target="#audit-log-body">
+                    <option value="">Everyone</option>
+                    {% for person in actors %}
+                        <option value="{{ person.pk }}" {% if filters.actor == person.pk|stringformat:"s" %}selected{% endif %}>{{ person.username }}</option>
+                    {% endfor %}
+                    <option value="system" {% if filters.actor == 'system' %}selected{% endif %}>System</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="audit-log-body">
+    {% include 'partials/audit_log_body.html' %}
+</div>
+{% endblock %}

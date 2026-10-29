@@ -1,0 +1,11 @@
+<div class="form-check form-check-inline" title="Only recipes tagged cooked">
+    <input class="form-check-input" type="checkbox" id="cooked-only-toggle"
+           {% if cooked_only %}checked{% endif %}
+           hx-get="{% url 'recipes' %}"
+           hx-target="#recipe-results"
+           hx-include="#search_term, #sort_by"
+           hx-vals='js:{...jolofFilterVals()}'>
+    <label class="form-check-label" for="cooked-only-toggle">
+        Cooked
+    </label>
+</div>

@@ -1,0 +1,31 @@
+{% extends 'main/base.html' %} 
+{% block title %}Add Recipe From URL{% endblock %}
+{% block content %}
+<h3>Add Recipe From URL</h3>
+<div class="m-1 mb-2">
+    Paste one URL, or several (one per line).
+    <i id="url-import-hint" class="bi bi-info-circle text-secondary" style="cursor: help;"
+       data-bs-toggle="tooltip" data-bs-placement="right"
+       title="A single recipe opens for you to check before saving; several are imported and saved automatically."></i>
+</div>
+<form hx-post="{% url 'process-url-batch' %}"
+          hx-target="#result-area"
+          hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="mb-3">
+        {{ batch_form.urls }}
+    </div>
+    
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-cloud-download"></i> Get Recipes
+    </button>
+    <a href="{% url 'recipes' %}" class="btn btn-secondary">Cancel</a>
+</form>
+<br>
+ <!-- Errors and batch progress -->
+ <div id="result-area" class="mt-4">
+    {% if scrape_errors %}
+    {% include 'partials/url_import_errors.html' with errors=scrape_errors %}
+    {% endif %}
+ </div>
+{% endblock %}

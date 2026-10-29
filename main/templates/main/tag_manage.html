@@ -1,0 +1,70 @@
+{% extends 'main/base.html' %}
+{% block title %}Manage Tags{% endblock %}
+{% block content %}
+<h3>Manage Tags</h3>
+<p class="text-secondary">
+    Every tag in your collection. Renaming or deleting a tag here applies to every
+    recipe using it.
+</p>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="position-relative">
+            <input
+                type="search"
+                name="tag_search"
+                id="tag_search"
+                class="form-control form-control-lg"
+                placeholder="Search tags..."
+                value="{{ tag_search }}"
+                autocomplete="off"
+                hx-get="{% url 'tag-manage-list' %}"
+                hx-trigger="keyup changed delay:300ms, search"
+                hx-include="#tag_sort"
+                hx-target="#tag-manage-body"
+                hx-indicator="#tag-search-indicator"
+            >
+            <div id="tag-search-indicator" class="htmx-indicator spinner-border spinner-border-sm position-absolute"
+                 style="top: 15px; right: 15px;" role="status"></div>
+        </div>
+    </div>
+</div>
+
+<form id="tag-add-form" class="row g-2 align-items-end mb-4"
+      hx-post="{% url 'tag-add' %}"
+      hx-include="#tag_search, #tag_sort"
+      hx-target="#tag-manage-body"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <div class="col-6 col-md-3">
+        <label for="new_tag_label" class="form-label mb-1 text-secondary small">Label</label>
+        <input type="text" name="label" id="new_tag_label" class="form-control" placeholder="cuisine" maxlength="100" autocomplete="off">
+    </div>
+    <div class="col-6 col-md-3">
+        <label for="new_tag_value" class="form-label mb-1 text-secondary small">Value</label>
+        <input type="text" name="value" id="new_tag_value" class="form-control" placeholder="italian" maxlength="100" autocomplete="off">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Tag
+        </button>
+    </div>
+</form>
+
+<div id="tag-manage-body">
+    {% include 'partials/tag_manage_body.html' %}
+</div>
+
+<a href="{% url 'misc-tools' %}" class="btn btn-secondary mt-4">
+    <i class="bi bi-arrow-left"></i> Back to Misc. Tools
+</a>
+
+<script>
+    // The add form sits outside the swapped region, so clear it by hand once the
+    // tag has actually been created (tag_add sets the HX-Trigger header only on
+    // success -- a rejected tag keeps what was typed).
+    document.body.addEventListener('tagAdded', function () {
+        document.getElementById('tag-add-form').reset();
+        document.getElementById('new_tag_label').focus();
+    });
+</script>
+{% endblock %}

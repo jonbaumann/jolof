@@ -1,0 +1,49 @@
+{% comment %}
+Live API sessions, with a Revoke button each. Used on the Profile page (your
+own: api_sessions_own) and Platform Settings (everyone's). Swapped in place
+after a revoke.
+{% endcomment %}
+<div id="api-sessions">
+    {% if api_sessions %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr class="small text-secondary text-nowrap">
+                    {% if not api_sessions_own %}<th>User</th>{% endif %}
+                    <th>Client</th>
+                    <th>From</th>
+                    <th>Last used</th>
+                    <th title="If not used again">Ends</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody class="small">
+                {% for session in api_sessions %}
+                <tr class="text-nowrap">
+                    {% if not api_sessions_own %}<td>{{ session.user.username }}</td>{% endif %}
+                    <td>
+                        {{ session.client_name|default:"API client" }}
+                        <div class="text-secondary"><code>{{ session.token_prefix }}…</code></div>
+                    </td>
+                    <td title="{{ session.user_agent }}">{{ session.ip_address|default:"—" }}</td>
+                    <td title="Started {{ session.created_at|date:'M j, Y H:i' }}">{{ session.last_used_at|date:"M j, H:i" }}</td>
+                    <td>{% if session.ends %}{{ session.ends|date:"M j, H:i" }}{% else %}Never{% endif %}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-danger"
+                                hx-post="{% url api_session_revoke_url session.pk %}"
+                                hx-target="#api-sessions"
+                                hx-swap="outerHTML"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                hx-confirm="Revoke this session? Anything using its token will have to log in again.">
+                            Revoke
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-secondary small">No active API sessions.</div>
+    {% endif %}
+</div>

@@ -1,0 +1,19 @@
+<span id="workspace-btn-{{ recipe_id }}">
+  {% if in_workspace %}
+  <button class="btn btn-success"
+          hx-post="{% url 'workspace-remove' recipe_id %}"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          hx-target="#workspace-btn-{{ recipe_id }}"
+          hx-swap="outerHTML">
+    <i class="bi bi-check-circle-fill"></i> In Meal Planner
+  </button>
+  {% else %}
+  <button class="btn btn-primary"
+          hx-post="{% url 'workspace-add' recipe_id %}"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          hx-target="#workspace-btn-{{ recipe_id }}"
+          hx-swap="outerHTML">
+    <i class="bi bi-calendar-plus"></i> Add to Meal Planner
+  </button>
+  {% endif %}
+</span>

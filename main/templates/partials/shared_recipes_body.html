@@ -1,0 +1,88 @@
+{% comment %}
+The Shared Recipes table. Swapped in place after an Unshare so the row
+disappears without a full page reload; the sort rides along via hx-include.
+{% endcomment %}
+<input type="hidden" name="shared_sort" id="shared_sort" value="{{ shared_sort }}">
+
+{% if message %}
+    <div class="alert alert-success py-2"><i class="bi bi-check-circle"></i> {{ message }}</div>
+{% endif %}
+
+<div class="text-secondary mb-2">
+    {{ shared_count }} of {{ recipe_total }} recipe{{ recipe_total|pluralize }} shared publicly
+</div>
+
+{% if shared_rows %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col" class="sortable" style="cursor: pointer"
+                    hx-get="{% url 'shared-recipes-list' %}?shared_sort={% if shared_sort == 'name-asc' %}name-desc{% else %}name-asc{% endif %}"
+                    hx-target="#shared-recipes-body"
+                    title="Sort by name">
+                    Recipe {% if shared_sort == 'name-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% elif shared_sort == 'name-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                </th>
+                <th scope="col">Public link</th>
+                <th scope="col" class="text-center text-nowrap">Notes shown</th>
+                <th scope="col" class="text-nowrap sortable" style="cursor: pointer"
+                    hx-get="{% url 'shared-recipes-list' %}?shared_sort={% if shared_sort == 'updated-desc' %}updated-asc{% else %}updated-desc{% endif %}"
+                    hx-target="#shared-recipes-body"
+                    title="Sort by when the recipe was last edited">
+                    Last edited {% if shared_sort == 'updated-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% elif shared_sort == 'updated-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                </th>
+                <th scope="col" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in shared_rows %}
+            <tr>
+                <td>
+                    <a href="{% url 'recipe-detail' row.recipe.slug %}">{{ row.recipe.name }}</a>
+                </td>
+                <td>
+                    <div class="input-group input-group-sm" style="max-width: 420px;">
+                        <input type="text" class="form-control" value="{{ row.public_url }}" readonly
+                               id="sharedUrl-{{ row.recipe.id }}">
+                        <button class="btn btn-outline-secondary" type="button"
+                                title="Copy this link"
+                                onclick="navigator.clipboard.writeText(document.getElementById('sharedUrl-{{ row.recipe.id }}').value); this.innerHTML = '<i class=\'bi bi-check\'></i> Copied';">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                        <a class="btn btn-outline-secondary" href="{{ row.recipe.get_public_url }}"
+                           target="_blank" rel="noopener" title="Open the public page">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </div>
+                </td>
+                <td class="text-center">
+                    {% if row.recipe.share_notes %}
+                        <i class="bi bi-check-circle text-success" title="The notes section is included on the public page"></i>
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td class="text-nowrap text-secondary small">{{ row.recipe.updated_at|date:"j M Y, H:i" }}</td>
+                <td class="text-end">
+                    {% if can.recipe_read_write %}
+                    <button class="btn btn-sm btn-outline-danger"
+                            hx-post="{% url 'shared-recipe-unshare' row.recipe.id %}"
+                            hx-include="#shared_sort"
+                            hx-target="#shared-recipes-body"
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                            hx-confirm="Stop sharing &quot;{{ row.recipe.name }}&quot;? The link stops working immediately, but it's kept so re-sharing reuses the same URL."
+                            title="Turn this recipe's public link off">
+                        <i class="bi bi-slash-circle"></i> Unshare
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No recipes are shared publicly. Turn on "Make Public" on any recipe page to create a share link.
+</div>
+{% endif %}

@@ -1,0 +1,36 @@
+{% if recipe_success %}
+<div class="alert alert-success">
+    {% if job_type == "scrape_image" %}
+        <i class="bi bi-check-circle"></i> Images successfully scraped for {{ success_count }} recipes:
+    {% elif job_type == "url_batch" %}
+        <i class="bi bi-check-circle"></i> Successfully imported {{ success_count }} recipes:
+    {% endif %}
+    {% for each in recipe_success %}
+        <br><small><a href="{% url 'recipe-detail' each.slug %}" target="_blank">{{ each.name }}</a></small>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if recipe_failure %}
+<div class="alert alert-danger">
+    {% if job_type == "scrape_image" %}
+        <i class="bi bi-check-circle"></i> Unable to scrape images for {{ fail_count }} recipes:
+        {% for each in recipe_failure %}
+            <br><small><a href="{% url 'recipe-detail' each.slug %}" target="_blank">{{ each.name }}</a></small>
+        {% endfor %}
+    {% elif job_type == "url_batch" %}
+        <i class="bi bi-x-circle"></i> Failed to import {{ fail_count }} recipe URLs:
+        {% for each in recipe_failure %}
+            <br><small><a href="{{ each }}" target="_blank">{{ each }}</a></small>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not recipe_failure and not recipe_success%}
+    {% if job_type == "scrape_image" %}
+        <div class="alert alert-primary">
+        <i class="bi bi-check-circle"></i> No images to scrape.
+        </div>
+    {% endif %}
+{% endif %}

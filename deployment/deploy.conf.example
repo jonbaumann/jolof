@@ -1,0 +1,53 @@
+# /etc/jolof/deploy.conf — settings for deploy_jolof.sh
+#
+# This file is sourced by bash, so normal shell quoting applies here.
+# (Unlike /etc/jolof/jolof.env, which is fed to `docker --env-file` and must
+# have completely unquoted values.)
+
+# --- source ----------------------------------------------------------------
+REPO_URL="git@github.com:<you>/jolof.git"       # required
+GIT_REF="main"                                  # branch, tag, or sha
+# Root reads this directly, whoever owns it. If the key has a passphrase the
+# script prompts once via a private ssh-agent; if it has none, it is used
+# directly. Detected automatically — nothing to set here.
+DEPLOY_KEY="/etc/jolof/ssh/github_deploy_key"
+KNOWN_HOSTS="/etc/jolof/known_hosts"            # pinned github host keys
+
+# --- build inputs ----------------------------------------------------------
+APP_ENV_FILE="/etc/jolof/jolof.env"
+# Leave empty to build with the repo's Dockerfile and .dockerignore; set a
+# path to use your own instead.
+DOCKERFILE=""
+DOCKERIGNORE=""
+
+# --- filesystem layout -----------------------------------------------------
+BASE_DIR="/opt/jolof"
+RELEASES_DIR="/opt/jolof/releases"
+BACKUP_DIR="/opt/jolof/backups"
+KEEP_RELEASES=3
+
+# --- docker ----------------------------------------------------------------
+IMAGE_NAME="jolof-latest"
+CONTAINER_NAME="jolof-latest"
+DOCKER_NETWORK="jolof_net"
+NETWORK_ALIAS="jolof"          # how nginx reaches the app
+HOST_BIND="127.0.0.1:8000:8000"
+RUN_AS="1000:1000"
+
+DB_CONTAINER="postgres_jolof"
+# Optional: your TLS-terminating proxy container, if it's on DOCKER_NETWORK.
+# Empty skips the proxy checks.
+NGINX_CONTAINER=""
+
+# --- health check ----------------------------------------------------------
+HEALTH_URL="http://127.0.0.1:8000/"
+HEALTH_HOST_HEADER="recipes.example.com"    # required; must be in ALLOWED_HOSTS
+HEALTH_RETRIES=30                           # seconds to wait for first response
+
+# --- pre-flight ------------------------------------------------------------
+MIN_FREE_MB=2048
+REQUIRED_ENV_KEYS=(SECRET_KEY DJANGO_SETTINGS_MODULE ALLOWED_HOSTS DB_NAME DB_USER DB_PASSWORD DB_HOST DB_PORT
+                   AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_S3_REGION_NAME
+                   AWS_STATIC_BUCKET_NAME AWS_MEDIA_BUCKET_NAME)
+
+LOG_FILE="/var/log/jolof-deploy.log"

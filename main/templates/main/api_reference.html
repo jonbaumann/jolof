@@ -1,0 +1,470 @@
+{% extends 'main/base.html' %}
+{% block title %}API Reference{% endblock %}
+{% comment %}
+The hand-written guide to the REST API (main/api/), for anyone whose role
+includes an API permission. Examples use this server's own address, so they
+can be pasted straight into a terminal. Swagger at api-docs is generated from
+the code; this page explains it. Keep the two in step when an endpoint changes
+(ApiReferenceTests checks every endpoint and sort key is mentioned).
+{% endcomment %}
+{% block content %}
+<style>
+    .api-ref h4 { scroll-margin-top: 1rem; }
+    .api-ref h5 { scroll-margin-top: 1rem; margin-top: 1.75rem; }
+    .api-ref section + section { border-top: 1px solid var(--bs-border-color); margin-top: 2.5rem; padding-top: 2rem; }
+    .api-endpoint {
+        font-family: var(--bs-font-monospace);
+        font-size: .95rem;
+        background: var(--bs-tertiary-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: .375rem;
+        padding: .4rem .65rem;
+        display: inline-block;
+        word-break: break-all;
+    }
+    .api-method { font-weight: 700; margin-right: .4rem; }
+    .api-method-get { color: var(--bs-success); }
+    .api-method-post { color: var(--bs-primary); }
+    .api-code-wrap { position: relative; }
+    .api-code {
+        background: var(--bs-tertiary-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: .375rem;
+        padding: .75rem 3rem .75rem 1rem;
+        font-size: .82rem;
+        white-space: pre;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+    .api-code-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--bs-secondary-color); margin-bottom: .25rem; }
+    .api-copy { position: absolute; top: .4rem; right: .4rem; opacity: .75; }
+    .api-copy:hover, .api-copy:focus { opacity: 1; }
+    .api-ref table code { white-space: nowrap; }
+    .api-toc a { text-decoration: none; display: block; padding: .15rem 0; }
+    .api-toc .api-toc-sub { padding-left: .85rem; font-size: .875rem; }
+    @media (min-width: 992px) {
+        .api-toc { position: sticky; top: 1rem; }
+    }
+    /* Narrower screens: the top-level links only, wrapped into a few lines. */
+    @media (max-width: 991.98px) {
+        .api-toc { display: flex; flex-wrap: wrap; gap: .1rem 1rem; padding-bottom: .75rem; border-bottom: 1px solid var(--bs-border-color); }
+        .api-toc .api-toc-sub { display: none; }
+    }
+</style>
+
+<div class="api-ref mx-auto" style="max-width: 1100px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h3 class="mb-1">API Reference</h3>
+            <div class="text-secondary">Read your recipes, tags and meal planner from scripts, apps and AI agents.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'api-docs' %}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
+               title="Generated from the code; try requests in the browser">
+                <i class="bi bi-box-arrow-up-right"></i> Interactive docs
+            </a>
+            <a href="{% url 'api-schema' %}" class="btn btn-outline-secondary btn-sm" title="OpenAPI 3 schema (YAML)">
+                <i class="bi bi-filetype-yml"></i> OpenAPI schema
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <nav class="col-lg-3">
+            <div class="api-toc small">
+                <a href="#start">Quick start</a>
+                <a href="#auth">Session tokens</a>
+                <a href="#conventions">Responses &amp; errors</a>
+                <a href="#recipes">Recipes</a>
+                <a class="api-toc-sub" href="#recipes-views">Response sizes</a>
+                <a class="api-toc-sub" href="#recipes-filters">Filters</a>
+                <a class="api-toc-sub" href="#recipes-sort">Sorting</a>
+                <a class="api-toc-sub" href="#recipes-paging">Paging</a>
+                <a class="api-toc-sub" href="#recipes-examples">Examples</a>
+                <a class="api-toc-sub" href="#recipe-detail">One recipe</a>
+                <a href="#tags">Tags</a>
+                <a href="#meal-plan">Meal plan</a>
+                <a href="#workspace">Workspace &amp; freezer</a>
+                <a href="#agents">Tips for AI agents</a>
+            </div>
+        </nav>
+
+        <div class="col-lg-9">
+
+            <section id="start">
+                <h4>Quick start</h4>
+                <p>
+                    Every endpoint lives under <code>{{ api_base }}</code> and speaks JSON. Log in once with your
+                    Jolof username and password to get a <strong>session token</strong>, then send the token with
+                    each request. Your role currently gives you:
+                </p>
+                <ul>
+                    <li>Recipes and tags: {% if can_api_recipes %}<span class="badge text-bg-success">yes</span>{% else %}<span class="badge text-bg-secondary">no</span>{% endif %}</li>
+                    <li>Meal planner, workspace and freezer: {% if can_api_mealplan %}<span class="badge text-bg-success">yes</span>{% else %}<span class="badge text-bg-secondary">no</span>{% endif %}</li>
+                </ul>
+
+                <div class="api-code-label">1. Log in and keep the token</div>
+                <div class="api-code-wrap"><pre class="api-code">TOKEN=$(curl -s -X POST {{ api_base }}auth/login/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "{{ user.username }}", "password": "YOUR-PASSWORD", "client_name": "my-script"}' \
+  | jq -r .token)</pre></div>
+
+                <div class="api-code-label">2. Use it</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}recipes/?view=names&amp;q=chicken' \
+  -H "Authorization: Bearer $TOKEN"</pre></div>
+
+                <div class="api-code-label">3. Log out when you're done</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s -X POST {{ api_base }}auth/logout/ -H "Authorization: Bearer $TOKEN"</pre></div>
+                <p class="small text-secondary mb-0">
+                    The examples use <a href="https://curl.se/" target="_blank" rel="noopener">curl</a> and
+                    <a href="https://jqlang.github.io/jq/" target="_blank" rel="noopener">jq</a>, but any HTTP client works.
+                </p>
+            </section>
+
+            <section id="auth">
+                <h4>Session tokens</h4>
+
+                <h5>Log in</h5>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-post">POST</span>/api/v1/auth/login/</div>
+                <p>
+                    Send <code>username</code> and <code>password</code>, and optionally a <code>client_name</code>
+                    that labels the session on your Profile page (for example <code>jolof-mcp</code>).
+                    The answer is <code>201</code> with the token. It's shown only this once, so keep it.
+                </p>
+                <div class="api-code-label">Response</div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{
+  "token": "jlf_oBWx3k...",
+  "token_prefix": "jlf_oBWx",
+  "user": {"id": 3, "username": "me"},
+  "permissions": ["api-mealplan-read", "api-recipe-read"],
+  "client_name": "my-script",
+  "created_at": "2026-10-24T15:00:00Z",
+  "last_used_at": "2026-10-24T15:00:00Z",
+  "idle_timeout_minutes": 60,
+  "expires_at": "2026-10-24T16:00:00Z"
+}</pre></div>{% endverbatim %}
+
+                <p>Login is refused with one of these:</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Status</th><th>Code</th><th>Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td>400</td><td><code>invalid_credentials</code></td><td>Wrong username or password, or the account is deactivated.</td></tr>
+                            <tr><td>403</td><td><code>no_api_access</code></td><td>The role has no API permission.</td></tr>
+                            <tr><td>403</td><td><code>password_change_required</code></td><td>Log in to Jolof in a browser and change the password first.</td></tr>
+                            <tr><td>429</td><td><code>throttled</code></td><td>More than 10 attempts a minute for this username.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5>Send the token</h5>
+                <p>Add this header to every other request:</p>
+                <div class="api-code-wrap"><pre class="api-code">Authorization: Bearer jlf_oBWx3k...</pre></div>
+                <p>
+                    A token lasts the whole session, however long that is, as long as it keeps being used.
+                    It stops working when:
+                </p>
+                <ul>
+                    <li>it goes unused for the idle timeout ({% if idle_timeout_minutes %}currently <strong>{{ idle_timeout_minutes }} minute{{ idle_timeout_minutes|pluralize }}</strong>{% else %}currently <strong>off</strong>{% endif %}). Every request resets the clock;</li>
+                    <li>your password changes;</li>
+                    <li>you log out, or the session is revoked from your <a href="{% url 'profile' %}">Profile</a> (or by an administrator);</li>
+                    <li>your account is deactivated.</li>
+                </ul>
+                <p>
+                    Any of these answers <code>401</code> with code <code>session_expired</code> or
+                    <code>invalid_token</code>. Just log in again. Your role is checked on every request,
+                    so a role change applies straight away.
+                </p>
+
+                <h5>Check the session</h5>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/auth/session/</div>
+                <p>
+                    The same details as the login response, without the token. <code>expires_at</code> is when the
+                    session ends if it goes unused; each request pushes it back. It's <code>null</code> when there's
+                    no idle timeout.
+                </p>
+
+                <h5>Log out</h5>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-post">POST</span>/api/v1/auth/logout/</div>
+                <p class="mb-0">Ends the session for the token sent. Answers <code>204</code> with no body.</p>
+            </section>
+
+            <section id="conventions">
+                <h4>Responses &amp; errors</h4>
+                <p>Every error has the same shape. <code>fields</code> appears when a parameter was wrong, and says which:</p>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{
+  "error": {
+    "code": "invalid",
+    "message": "Must be one of: names, summary, full.",
+    "fields": {"view": ["Must be one of: names, summary, full."]}
+  }
+}</pre></div>{% endverbatim %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Status</th><th>Typical code</th><th>Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td>400</td><td><code>invalid</code></td><td>A bad parameter.</td></tr>
+                            <tr><td>401</td><td><code>not_authenticated</code>, <code>invalid_token</code>, <code>session_expired</code></td><td>No token, a bad one, or one that has stopped working. Log in again.</td></tr>
+                            <tr><td>403</td><td><code>permission_denied</code></td><td>Your role doesn't include this endpoint.</td></tr>
+                            <tr><td>404</td><td><code>not_found</code></td><td>No such recipe, or a page past the end.</td></tr>
+                            <tr><td>429</td><td><code>throttled</code></td><td>Too many login attempts.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="recipes">
+                <h4>Recipes</h4>
+                <p class="small text-secondary">Needs the <span class="badge text-bg-secondary">api-recipe-read</span> permission.</p>
+
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/recipes/</div>
+                <p>Search, filter, sort and page through recipes. Every parameter is optional, and they combine with AND.</p>
+
+                <h5 id="recipes-views">Response sizes: <code>view</code></h5>
+                <p>The main lever for keeping responses small. Each size includes everything in the one above it.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th><code>view</code></th><th>Fields</th><th>Max page size</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>names</code></td><td><code>id</code>, <code>name</code></td><td>500</td></tr>
+                            <tr><td><code>summary</code> <span class="text-secondary small">(default)</span></td>
+                                <td>adds <code>slug</code>, <code>description</code>, <code>rating</code>, <code>complexity</code>, <code>effort</code>, <code>health</code>,
+                                    <code>gluten_free</code>, <code>dairy_free</code>, <code>vegetarian</code>, <code>vegan</code>, <code>tags</code>,
+                                    <code>is_favorite</code>, <code>is_public</code></td><td>100</td></tr>
+                            <tr><td><code>full</code></td>
+                                <td>adds <code>ingredients</code>, <code>instructions</code>, <code>notes</code>, <code>source_url</code>, <code>image_url</code>,
+                                    <code>web_url</code>, <code>created_at</code>, <code>updated_at</code></td><td>100</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="small">
+                    <li>Ratings (<code>rating</code>, <code>complexity</code>, <code>effort</code>, <code>health</code>) are 1 to 5, or <code>null</code> when unrated.</li>
+                    <li>Dietary flags are always <code>true</code> or <code>false</code>.</li>
+                    <li><code>tags</code> are <code>"label:value"</code> strings, like <code>"cuisine:thai"</code>.</li>
+                    <li><code>is_favorite</code> is about <em>your</em> favorites.</li>
+                    <li><code>image_url</code> is a signed link that stops working after about an hour; <code>web_url</code> is the recipe's page in Jolof.</li>
+                </ul>
+
+                <h5 id="recipes-filters">Filters</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Parameter</th><th>Example</th><th>Keeps</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>q</code></td><td><code>q=chicken rice</code></td>
+                                <td>Searches like the Recipes page: every word must appear in the name, ingredients, description or a tag.
+                                    A <code>label:value</code> word (or just <code>label:</code>) matches tags.</td></tr>
+                            <tr><td><code>tag</code></td><td><code>tag=cuisine:thai</code></td>
+                                <td>Recipes with exactly that tag (case doesn't matter). Repeat it to require several:
+                                    <code>tag=cuisine:thai&amp;tag=course:main</code>.</td></tr>
+                            <tr><td><code>cooked</code></td><td><code>cooked=true</code></td><td>Recipes tagged "cooked".</td></tr>
+                            <tr><td><code>favorites</code></td><td><code>favorites=true</code></td><td>Your favorites.</td></tr>
+                            <tr><td><code>public</code></td><td><code>public=true</code></td><td>Recipes with a public share link.</td></tr>
+                            <tr><td><code>vegetarian</code>, <code>vegan</code>,<br><code>gluten_free</code>, <code>dairy_free</code></td><td><code>vegan=true</code></td><td>Recipes with that box ticked.</td></tr>
+                            <tr><td><code>min_rating</code></td><td><code>min_rating=4</code></td><td>Rated at least this (1 to 5).</td></tr>
+                            <tr><td><code>min_health</code></td><td><code>min_health=4</code></td><td>Healthiness at least this.</td></tr>
+                            <tr><td><code>max_complexity</code></td><td><code>max_complexity=2</code></td><td>Complexity at most this.</td></tr>
+                            <tr><td><code>max_effort</code></td><td><code>max_effort=2</code></td><td>Effort at most this.</td></tr>
+                            <tr><td><code>ids</code></td><td><code>ids=3,17,42</code></td><td>Just these recipes.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small text-secondary">
+                    Unrated recipes never pass a rating filter. Not sure which tags exist? Ask <a href="#tags">tags/</a>.
+                </p>
+
+                <h5 id="recipes-sort">Sorting: <code>sort</code></h5>
+                <p>The same choices as the Recipes page. Ties sort by name, and unrated recipes always sort last.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th><code>sort</code></th><th>Order</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>recipe-name</code> <span class="text-secondary small">(default)</span></td><td>A to Z, ignoring case.</td></tr>
+                            <tr><td><code>recently-added</code></td><td>Newest first.</td></tr>
+                            <tr><td><code>highest-rating</code></td><td>Best rated first.</td></tr>
+                            <tr><td><code>most-tags</code></td><td>Most tags first.</td></tr>
+                            <tr><td><code>complexity-asc</code> / <code>complexity-desc</code></td><td>Simplest / most complex first.</td></tr>
+                            <tr><td><code>effort-asc</code> / <code>effort-desc</code></td><td>Least / most effort first.</td></tr>
+                            <tr><td><code>healthiness-asc</code> / <code>healthiness-desc</code></td><td>Least / most healthy first.</td></tr>
+                            <tr><td><code>in-planner-desc</code> / <code>in-planner-asc</code></td><td>Recipes in your meal-planner workspace first / last.</td></tr>
+                            <tr><td><code>favorites-desc</code> / <code>favorites-asc</code></td><td>Your favorites first / last.</td></tr>
+                            <tr><td><code>public-desc</code> / <code>public-asc</code></td><td>Publicly shared recipes first / last.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 id="recipes-paging">Paging</h5>
+                <p>
+                    Use <code>page</code> (from 1) and <code>page_size</code> (default 25, up to 100, or 500 with
+                    <code>view=names</code>). A page past the end is a <code>404</code>. Follow <code>next</code>
+                    until it's <code>null</code> to walk every page.
+                </p>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{
+  "count": 213,
+  "page": 1,
+  "page_size": 25,
+  "total_pages": 9,
+  "next": "https://jolof.example/api/v1/recipes/?page=2",
+  "previous": null,
+  "results": [ ... ]
+}</pre></div>{% endverbatim %}
+
+                <h5 id="recipes-examples">Examples</h5>
+                <div class="api-code-label">Every recipe name in one go</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}recipes/?view=names&amp;page_size=500' -H "Authorization: Bearer $TOKEN"</pre></div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{"count": 3, "page": 1, "page_size": 500, "total_pages": 1, "next": null, "previous": null,
+ "results": [{"id": 12, "name": "Jollof Rice"}, {"id": 7, "name": "Pad Thai"}, {"id": 31, "name": "Shakshuka"}]}</pre></div>{% endverbatim %}
+
+                <div class="api-code-label">Best-rated vegetarian recipes mentioning chickpeas</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}recipes/?q=chickpea&amp;vegetarian=true&amp;sort=highest-rating' \
+  -H "Authorization: Bearer $TOKEN"</pre></div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{"count": 1, "page": 1, "page_size": 25, "total_pages": 1, "next": null, "previous": null,
+ "results": [{
+   "id": 31, "name": "Shakshuka", "slug": "shakshuka",
+   "description": "Eggs poached in spiced tomato and chickpeas.",
+   "rating": 5, "complexity": 2, "effort": 2, "health": 4,
+   "gluten_free": true, "dairy_free": false, "vegetarian": true, "vegan": false,
+   "tags": ["cuisine:middle eastern", "course:breakfast"],
+   "is_favorite": true, "is_public": false
+ }]}</pre></div>{% endverbatim %}
+
+                <div class="api-code-label">Quick, easy Thai mains</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}recipes/?tag=cuisine:thai&amp;tag=course:main&amp;max_effort=2&amp;max_complexity=2' \
+  -H "Authorization: Bearer $TOKEN"</pre></div>
+
+                <div class="api-code-label">Your favorites, newest first</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}recipes/?favorites=true&amp;sort=recently-added&amp;view=names' \
+  -H "Authorization: Bearer $TOKEN"</pre></div>
+
+                <div class="api-code-label">Several recipes in full</div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}recipes/?ids=12,31&amp;view=full' -H "Authorization: Bearer $TOKEN"</pre></div>
+
+                <h5 id="recipe-detail">One recipe</h5>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/recipes/<em>id</em>/</div>
+                <p>Every field, the same as <code>view=full</code>. An unknown id is a <code>404</code>.</p>
+                <div class="api-code-wrap"><pre class="api-code">curl -s {{ api_base }}recipes/31/ -H "Authorization: Bearer $TOKEN"</pre></div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{
+  "id": 31, "name": "Shakshuka", "slug": "shakshuka",
+  "description": "Eggs poached in spiced tomato and chickpeas.",
+  "rating": 5, "complexity": 2, "effort": 2, "health": 4,
+  "gluten_free": true, "dairy_free": false, "vegetarian": true, "vegan": false,
+  "tags": ["cuisine:middle eastern", "course:breakfast"],
+  "is_favorite": true, "is_public": false,
+  "ingredients": "2 tbsp olive oil\n1 onion, sliced\n...",
+  "instructions": "1. Soften the onion...\n2. ...",
+  "notes": "Good with flatbread.",
+  "source_url": "https://example.com/shakshuka",
+  "image_url": "https://...s3.amazonaws.com/...&amp;X-Amz-Expires=3600",
+  "web_url": "https://jolof.example/recipe/shakshuka/",
+  "created_at": "2026-03-02T18:21:04Z",
+  "updated_at": "2026-09-14T12:00:51Z"
+}</pre></div>{% endverbatim %}
+            </section>
+
+            <section id="tags">
+                <h4>Tags</h4>
+                <p class="small text-secondary">Needs the <span class="badge text-bg-secondary">api-recipe-read</span> permission.</p>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/tags/</div>
+                <p>
+                    Every tag with how many recipes use it, ordered by label then value: the values worth passing to
+                    the recipes <code>tag</code> filter. <code>q</code> matches the label or value. Paged like recipes,
+                    100 a page by default and up to 500.
+                </p>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}tags/?q=cuisine' -H "Authorization: Bearer $TOKEN"</pre></div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{"count": 2, "page": 1, "page_size": 100, "total_pages": 1, "next": null, "previous": null,
+ "results": [
+   {"id": 4, "label": "cuisine", "value": "thai", "recipe_count": 14},
+   {"id": 9, "label": "cuisine", "value": "west african", "recipe_count": 6}
+ ]}</pre></div>{% endverbatim %}
+            </section>
+
+            <section id="meal-plan">
+                <h4>Meal plan</h4>
+                <p class="small text-secondary">
+                    Needs the <span class="badge text-bg-secondary">api-mealplan-read</span> permission. The meal planner
+                    endpoints answer for your household, or for your own planner if you're not in one;
+                    <code>household</code> says which (<code>null</code> for your own).
+                </p>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/meal-plan/</div>
+                <p>What's planned each day, ordered by date and then slot.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Parameter</th><th>Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>start</code> <span class="text-secondary small">YYYY-MM-DD</span></td><td>Today (the server's date, in UTC).</td></tr>
+                            <tr><td><code>end</code> <span class="text-secondary small">inclusive</span></td><td>Two weeks from <code>start</code>. At most 92 days after it.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="api-code-wrap"><pre class="api-code">curl -s '{{ api_base }}meal-plan/?start=2026-10-26&amp;end=2026-11-01' -H "Authorization: Bearer $TOKEN"</pre></div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{
+  "household": {"id": 1, "name": "Home"},
+  "start": "2026-10-26",
+  "end": "2026-11-01",
+  "entries": [
+    {"id": 51, "date": "2026-10-26", "slot": 1, "name": "Jollof Rice",
+     "recipe": {"id": 12, "name": "Jollof Rice", "slug": "jollof-rice"}, "custom_text": ""},
+    {"id": 52, "date": "2026-10-27", "slot": 1, "name": "Leftovers",
+     "recipe": null, "custom_text": "Leftovers"}
+  ]
+}</pre></div>{% endverbatim %}
+                <p class="mb-0">
+                    <code>recipe</code> is <code>null</code> for a custom-text entry, and <code>name</code> is then the
+                    text. <code>slot</code> is the entry's position within its day, from 1.
+                </p>
+            </section>
+
+            <section id="workspace">
+                <h4>Workspace &amp; freezer</h4>
+                <p class="small text-secondary">Needs the <span class="badge text-bg-secondary">api-mealplan-read</span> permission.</p>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/workspace/</div>
+                <div class="api-endpoint mb-2"><span class="api-method api-method-get">GET</span>/api/v1/freezer/</div>
+                <p>The cards waiting in the meal planner's workspace, and what's in the freezer. Newest first, not paged.</p>
+                <div class="api-code-wrap"><pre class="api-code">curl -s {{ api_base }}freezer/ -H "Authorization: Bearer $TOKEN"</pre></div>
+{% verbatim %}<div class="api-code-wrap"><pre class="api-code">{
+  "household": null,
+  "items": [
+    {"id": 8, "name": "Jollof Rice", "recipe": {"id": 12, "name": "Jollof Rice", "slug": "jollof-rice"},
+     "custom_text": "", "created_at": "2026-10-21T19:40:02Z"},
+    {"id": 7, "name": "Corn", "recipe": null, "custom_text": "Corn", "created_at": "2026-10-20T18:02:11Z"}
+  ]
+}</pre></div>{% endverbatim %}
+            </section>
+
+            <section id="agents">
+                <h4>Tips for AI agents</h4>
+                <ul class="mb-0">
+                    <li>Start with <code>view=names</code>: the whole library fits in one small response.
+                        Then fetch only the recipes you need with <code>ids=...&amp;view=full</code> or <code>recipes/<em>id</em>/</code>.</li>
+                    <li>Use <code>view=summary</code> when choosing between recipes. It has ratings, tags and dietary flags, without the long text.</li>
+                    <li>Narrow on the server rather than reading everything: <code>q</code>, <code>tag</code>, the dietary flags
+                        and the rating limits all combine.</li>
+                    <li>Call <code>tags/</code> to learn which labels and values exist before filtering on them.</li>
+                    <li>Pass a <code>client_name</code> when logging in, so the session is easy to spot and revoke on your Profile page.</li>
+                    <li>On a <code>401</code>, log in again and retry once.</li>
+                </ul>
+            </section>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // A copy button on every code block.
+    document.querySelectorAll('.api-ref .api-code-wrap').forEach(function (wrap) {
+        var pre = wrap.querySelector('pre');
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-sm btn-outline-secondary api-copy';
+        button.title = 'Copy';
+        button.setAttribute('aria-label', 'Copy');
+        button.innerHTML = '<i class="bi bi-clipboard"></i>';
+        button.addEventListener('click', function () {
+            navigator.clipboard.writeText(pre.innerText).then(function () {
+                button.innerHTML = '<i class="bi bi-check"></i>';
+                setTimeout(function () { button.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+            });
+        });
+        wrap.appendChild(button);
+    });
+</script>
+{% endblock %}

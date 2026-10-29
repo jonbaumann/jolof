@@ -1,0 +1,17 @@
+{% extends 'main/base.html' %} 
+{% block title %}Delete Recipe{% endblock %}
+{% block content %} 
+    <h3>{{ name }}</h3>
+    Are you sure you want to delete this recipe?
+    <br><br>
+    <div class="container">
+        <div class="row">
+            <div class="col col-md-1">
+                <a class="btn btn-outline-primary " href="/recipe-delete/{{id}}/confirm/">Yes</a>
+            </div>
+            <div class="col col-md-1">
+                <a class="btn btn-outline-secondary " href="{% url 'recipe-detail' slug %}">Cancel</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

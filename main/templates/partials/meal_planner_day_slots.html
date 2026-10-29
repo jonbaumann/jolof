@@ -1,0 +1,72 @@
+{% comment %}
+Renders a single day's meal slots: one drop-zone per existing meal plan plus a
+trailing "+" add button (also a drop zone) when under the per-day cap. Expects
+`day` (with .date, .meal_plans, .can_add) and `current_date` in context. Shared
+by the desktop weekly grid and the mobile daily view.
+{% endcomment %}
+<div class="p-1">
+  {% for meal_plan in day.meal_plans %}
+  <!-- Filled slot -->
+  <div class="planner-slot-zone mb-1"
+       data-date="{{ day.date|date:'Y-m-d' }}"
+       data-slot="{{ meal_plan.slot }}">
+  <div class="planner-slot-filled" draggable="{% if can.mealplan_read_write %}true{% else %}false{% endif %}" data-mp-id="{{ meal_plan.id }}">
+    {% if meal_plan.recipe %}
+      {% if meal_plan.recipe.image %}
+      <img src="{{ meal_plan.recipe.image.url }}"
+           class="planner-thumb rounded-1"
+           alt="">
+      {% else %}
+      <div class="planner-thumb-placeholder rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle">
+        <i class="bi bi-book text-secondary" style="font-size: 0.65rem;"></i>
+      </div>
+      {% endif %}
+    {% elif not can.mealplan_read_write %}
+    <div class="planner-thumb-placeholder rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle">
+      <i class="bi bi-card-text text-secondary" style="font-size: 0.65rem;"></i>
+    </div>
+    {% else %}
+    <button type="button"
+            class="planner-thumb-placeholder planner-edit-btn rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle border-0 p-0"
+            title="Edit “{{ meal_plan.display_name }}”"
+            data-bs-toggle="modal"
+            data-bs-target="#recipePicker"
+            hx-get="{% url 'meal-planner-recipe-picker' %}?date={{ day.date|date:'Y-m-d' }}&slot={{ meal_plan.slot }}&nav_date={{ current_date|date:'Y-m-d' }}&custom_text={{ meal_plan.custom_text|urlencode }}"
+            hx-target="#recipe-picker-modal-body"
+            hx-trigger="click">
+      <i class="bi bi-pencil text-secondary" style="font-size: 0.65rem;"></i>
+    </button>
+    {% endif %}
+    <span class="planner-recipe-name">{{ meal_plan.display_name }}</span>
+    {% if meal_plan.recipe %}
+    {% include 'partials/meal_planner_recipe_hovercard.html' with recipe=meal_plan.recipe %}
+    {% endif %}
+    {% if can.mealplan_read_write %}
+    <button class="planner-remove-btn btn-close"
+            title="Remove {{ meal_plan.display_name }}"
+            hx-post="/meal-planner/remove/{{ meal_plan.id }}/?nav_date={{ current_date|date:'Y-m-d' }}"
+            hx-target="#calendar-container"
+            hx-swap="innerHTML"
+            hx-confirm="Remove {{ meal_plan.display_name }}?">
+    </button>
+    {% endif %}
+  </div>
+  </div>
+  {% endfor %}
+
+  <!-- Add-a-slot button (doubles as a drop zone for a fresh slot) -->
+  {% if day.can_add and can.mealplan_read_write %}
+  <div class="planner-slot-zone"
+       data-date="{{ day.date|date:'Y-m-d' }}"
+       data-slot="new">
+  <button class="planner-slot-empty"
+          data-bs-toggle="modal"
+          data-bs-target="#recipePicker"
+          hx-get="{% url 'meal-planner-recipe-picker' %}?date={{ day.date|date:'Y-m-d' }}&slot=new&nav_date={{ current_date|date:'Y-m-d' }}"
+          hx-target="#recipe-picker-modal-body"
+          hx-trigger="click">
+    <i class="bi bi-plus"></i>
+  </button>
+  </div>
+  {% endif %}
+</div>

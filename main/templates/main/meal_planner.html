@@ -1,0 +1,383 @@
+{% extends 'main/base.html' %}
+{% block title %}Meal Planner{% endblock %}
+{% block content %}
+
+<style>
+.planner-week-card { border-radius: 10px; overflow: hidden; }
+.planner-week-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bs-secondary-color); }
+.planner-week-grid { min-width: 520px; }
+
+.planner-day-col { flex: 1; min-width: 70px; border-right: 1px solid var(--bs-border-color); }
+.planner-day-col:last-child { border-right: none; }
+.planner-today-col { border-top: 3px solid var(--bs-primary); }
+
+.planner-day-header { text-align: center; padding: 10px 4px 8px; background-color: var(--bs-tertiary-bg); border-bottom: 1px solid var(--bs-border-color); }
+.planner-today-header { background-color: rgba(var(--bs-primary-rgb), 0.08); }
+
+.planner-day-name { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bs-secondary-color); margin-bottom: 3px; }
+.planner-day-num { font-size: 1.05rem; font-weight: 600; color: var(--bs-body-color); line-height: 1; }
+.planner-month-name { font-size: 0.58rem; color: var(--bs-secondary-color); margin-top: 2px; }
+
+.planner-today-badge { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background-color: var(--bs-primary); color: #fff; font-size: 0.9rem; font-weight: 700; line-height: 1; margin: 0 auto; }
+
+.planner-slot-filled { position: relative; display: flex; align-items: center; gap: 5px; padding: 5px 22px 5px 6px; border-radius: 5px; border-left: 3px solid var(--bs-warning); background-color: rgba(var(--bs-warning-rgb), 0.12); min-height: 44px; }
+.planner-recipe-name { font-size: 0.8rem; font-weight: 500; flex-grow: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.planner-thumb { width: 30px; height: 30px; object-fit: cover; flex-shrink: 0; }
+.planner-thumb-placeholder { width: 30px; height: 30px; flex-shrink: 0; }
+.planner-remove-btn { position: absolute; top: 4px; right: 4px; font-size: 0.45rem; opacity: 0.4; }
+.planner-remove-btn:hover { opacity: 1; }
+
+.planner-slot-empty { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; border: 1.5px dashed var(--bs-border-color); border-radius: 5px; background: transparent; color: var(--bs-secondary-color); font-size: 1.1rem; cursor: pointer; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+.planner-slot-empty:hover { background-color: var(--bs-secondary-bg); border-color: var(--bs-secondary); color: var(--bs-secondary); }
+
+.planner-edit-btn { cursor: pointer; }
+.planner-edit-btn:hover .bi { color: var(--bs-primary) !important; }
+
+.planner-slot-filled[draggable="true"] { cursor: grab; }
+.planner-slot-filled.planner-dragging { opacity: 0.4; }
+.planner-slot-zone.planner-drop-over { outline: 2px dashed var(--bs-primary); outline-offset: -2px; border-radius: 6px; }
+
+.planner-workspace-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 320px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 2px; }
+@media (min-width: 576px) { .planner-workspace-strip { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 992px) { .planner-workspace-strip { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1200px) { .planner-workspace-strip { grid-template-columns: repeat(5, 1fr); } }
+.workspace-item { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; padding: 6px 26px 6px 6px; border: 1px solid var(--bs-border-color); border-left: 3px solid var(--bs-primary); border-radius: 6px; background-color: var(--bs-tertiary-bg); cursor: grab; }
+.workspace-item.planner-dragging { opacity: 0.4; }
+.workspace-item-thumb { width: 30px; height: 30px; object-fit: cover; flex-shrink: 0; }
+.workspace-item-name { font-size: 0.8rem; font-weight: 500; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.workspace-item-remove { position: absolute; top: 4px; right: 4px; font-size: 0.5rem; opacity: 0.4; }
+.workspace-item-remove:hover { opacity: 1; }
+.workspace-add-tile { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; padding: 6px 14px; border: 1.5px dashed var(--bs-border-color); border-radius: 6px; background: transparent; color: var(--bs-secondary-color); font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.workspace-add-tile:hover { border-color: var(--bs-primary); color: var(--bs-primary); }
+
+/* Hover popover shown over recipe-backed cards (workspace + calendar slots). */
+.planner-hovercard-data { display: none; }
+#planner-hovercard { position: fixed; z-index: 1080; width: 240px; max-width: calc(100vw - 16px); padding: 10px 12px; background-color: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); font-size: 0.85rem; }
+#planner-hovercard[hidden] { display: none; }
+.planner-hovercard-title { display: block; font-size: 0.9rem; font-weight: 600; line-height: 1.25; margin-bottom: 4px; color: var(--bs-link-color); text-decoration: none; }
+.planner-hovercard-title:hover { text-decoration: underline; }
+.planner-hovercard-stars { font-size: 0.8rem; margin-bottom: 6px; line-height: 1; }
+.planner-hovercard-metrics { display: flex; flex-direction: column; gap: 3px; }
+.planner-hovercard-metric { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.planner-hovercard-metric-label { color: var(--bs-secondary-color); font-size: 0.78rem; }
+.planner-hovercard-metric .bi { font-size: 1.1rem; }
+.planner-hovercard-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bs-border-color); }
+.planner-hovercard-tags .badge { font-size: 0.7rem; font-weight: 500; }
+
+.planner-mobile-date { font-size: 1.05rem; font-weight: 700; color: var(--bs-body-color); }
+/* On the single-day mobile view there's plenty of width, so let slots breathe. */
+.planner-mobile-day .planner-slot-filled { min-height: 52px; padding: 8px 26px 8px 8px; }
+.planner-mobile-day .planner-recipe-name { font-size: 0.95rem; white-space: normal; -webkit-line-clamp: unset; line-clamp: unset; }
+.planner-mobile-day .planner-thumb,
+.planner-mobile-day .planner-thumb-placeholder { width: 40px; height: 40px; }
+.planner-mobile-day .planner-slot-empty { min-height: 52px; font-size: 1.3rem; }
+
+[data-bs-theme="dark"] .planner-today-header { background-color: rgba(var(--bs-primary-rgb), 0.18); }
+[data-bs-theme="dark"] .planner-slot-filled { background-color: rgba(var(--bs-warning-rgb), 0.1); }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0"><i class="bi bi-calendar3"></i> Meal Planner</h3>
+  {% if household %}
+  <span class="text-secondary small" data-bs-toggle="tooltip" title="Everyone in this household shares this planner, workspace and freezer.">
+    <i class="bi bi-house-door"></i> {{ household.name }}
+  </span>
+  {% endif %}
+</div>
+
+<!-- Recipe Picker Modal -->
+<div class="modal fade" id="recipePicker" tabindex="-1" aria-labelledby="recipePickerLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="recipePickerLabel"><i class="bi bi-search"></i> Add Recipe</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0" id="recipe-picker-modal-body">
+        <div class="text-center py-5">
+          <div class="spinner-border text-secondary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Freezer "remove after scheduling?" confirm -->
+<div class="modal fade" id="freezerRemoveModal" tabindex="-1" aria-labelledby="freezerRemoveLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="freezerRemoveLabel"><i class="bi bi-snow text-info"></i> Used from freezer?</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Remove <strong id="freezer-remove-name"></strong> from your freezer list?
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Keep it</button>
+        <button type="button" class="btn btn-info btn-sm" id="freezer-remove-confirm"
+                data-url-template="{% url 'freezer-remove-item' 0 %}">Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CSRF token for HTMX POST requests -->
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+
+<!-- Workspace -->
+{% include 'partials/meal_planner_workspace.html' %}
+
+<!-- Calendar Container -->
+<div id="calendar-container">
+  {% include 'partials/meal_planner_calendar.html' %}
+</div>
+
+<script>
+// Real-time poll guard: the calendar/workspace/freezer poll (see
+// meal_planner_calendar.html) skips a tick while true, so it can't swap out
+// the DOM mid-drag or slam a hover card shut while someone's reading it.
+window.__plannerDragActive = false;
+window.__plannerHoverActive = false;
+function plannerShouldPoll() {
+    return !window.__plannerDragActive && !window.__plannerHoverActive && document.visibilityState !== 'hidden';
+}
+
+document.body.addEventListener('htmx:configRequest', function(event) {
+    if (event.detail.verb.toLowerCase() !== 'get') {
+        event.detail.parameters['csrfmiddlewaretoken'] = document.getElementById('csrf-token').value;
+    }
+});
+
+document.body.addEventListener('closeModal', function() {
+    const modalEl = document.getElementById('recipePicker');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+});
+
+// After a freezer item is scheduled onto a day, offer to remove it from the
+// freezer (called from the drop handler once the add request resolves).
+function promptFreezerRemove(id, name) {
+    const modalEl = document.getElementById('freezerRemoveModal');
+    if (!modalEl) return;
+    document.getElementById('freezer-remove-name').textContent = name || 'this item';
+    document.getElementById('freezer-remove-confirm').dataset.freezerId = id;
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+document.getElementById('freezer-remove-confirm').addEventListener('click', function() {
+    const id = this.dataset.freezerId;
+    const url = this.dataset.urlTemplate.replace('/0/', '/' + id + '/');
+    const modalEl = document.getElementById('freezerRemoveModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+    htmx.ajax('POST', url, { target: '#freezer-strip', swap: 'outerHTML' });
+});
+
+// Drag-and-drop onto meal slots. Sources are either an existing calendar entry
+// (.planner-slot-filled → move/swap) or a workspace recipe (.workspace-item →
+// add). Listeners are delegated on document.body so they survive HTMX swaps of
+// both the calendar and the workspace markup.
+(function() {
+    let dragData = null; // {type:'move', id} | {type:'add', recipeId}
+
+    document.body.addEventListener('dragstart', function(e) {
+        const filled = e.target.closest('.planner-slot-filled');
+        if (filled) {
+            dragData = { type: 'move', id: filled.dataset.mpId };
+            e.dataTransfer.effectAllowed = 'move';
+            filled.classList.add('planner-dragging');
+            window.__plannerDragActive = true;
+            return;
+        }
+        const item = e.target.closest('.workspace-item');
+        if (item) {
+            if (item.dataset.recipeId) {
+                dragData = { type: 'add', recipeId: item.dataset.recipeId };
+            } else {
+                dragData = { type: 'add', customText: item.dataset.customText };
+            }
+            // Freezer cards remember their origin so a drop onto the calendar can
+            // offer to remove the item from the freezer.
+            if (item.dataset.source === 'freezer') {
+                dragData.freezerId = item.dataset.freezerId;
+                dragData.freezerName = item.dataset.name;
+            }
+            e.dataTransfer.effectAllowed = 'copy';
+            item.classList.add('planner-dragging');
+            window.__plannerDragActive = true;
+        }
+    });
+
+    document.body.addEventListener('dragend', function(e) {
+        const el = e.target.closest('.planner-slot-filled, .workspace-item');
+        if (el) el.classList.remove('planner-dragging');
+        document.querySelectorAll('.planner-drop-over').forEach(function(z) {
+            z.classList.remove('planner-drop-over');
+        });
+        dragData = null;
+        window.__plannerDragActive = false;
+    });
+
+    document.body.addEventListener('dragover', function(e) {
+        if (!dragData) return;
+        const zone = e.target.closest('.planner-slot-zone');
+        if (!zone) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = dragData.type === 'add' ? 'copy' : 'move';
+    });
+
+    document.body.addEventListener('dragenter', function(e) {
+        if (!dragData) return;
+        const zone = e.target.closest('.planner-slot-zone');
+        if (zone) zone.classList.add('planner-drop-over');
+    });
+
+    document.body.addEventListener('dragleave', function(e) {
+        const zone = e.target.closest('.planner-slot-zone');
+        if (zone && !zone.contains(e.relatedTarget)) zone.classList.remove('planner-drop-over');
+    });
+
+    document.body.addEventListener('drop', function(e) {
+        if (!dragData) return;
+        const zone = e.target.closest('.planner-slot-zone');
+        if (!zone) return;
+        e.preventDefault();
+        zone.classList.remove('planner-drop-over');
+        const navEl = document.getElementById('planner-nav');
+        const navDate = navEl ? navEl.dataset.navDate : '';
+        if (dragData.type === 'move') {
+            htmx.ajax('POST', '{% url "meal-plan-move" %}', {
+                target: '#calendar-container',
+                swap: 'innerHTML',
+                values: {
+                    source_id: dragData.id,
+                    target_date: zone.dataset.date,
+                    target_slot: zone.dataset.slot,
+                    nav_date: navDate
+                }
+            });
+        } else {
+            const values = {
+                date: zone.dataset.date,
+                slot: zone.dataset.slot,
+                nav_date: navDate
+            };
+            if (dragData.recipeId) {
+                values.recipe_id = dragData.recipeId;
+            } else {
+                values.custom_text = dragData.customText;
+            }
+            const fz = dragData.freezerId ? { id: dragData.freezerId, name: dragData.freezerName } : null;
+            htmx.ajax('POST', '{% url "meal-plan-add" %}', {
+                target: '#calendar-container',
+                swap: 'innerHTML',
+                values: values
+            }).then(function() {
+                if (fz) promptFreezerRemove(fz.id, fz.name);
+            });
+        }
+        dragData = null;
+    });
+})();
+
+// Hover popover for recipe cards. Each recipe-backed card embeds a hidden
+// .planner-hovercard-data node; on hover we clone its markup into a single
+// floating #planner-hovercard so it can overflow the calendar/workspace scroll
+// containers and stay interactive (the title is a clickable link). Delegated on
+// document.body so it survives HTMX swaps.
+(function() {
+    let pop = null, currentCard = null, hideTimer = null, dragging = false;
+    let switchTimer = null, pendingCard = null;
+    // When a popover is already open, wait this long before swapping it to a
+    // different card. Lets the cursor travel to the open popover across an
+    // adjacent (tightly stacked) calendar slot without hijacking the swap.
+    const SWITCH_DELAY = 220;
+
+    function ensurePop() {
+        if (pop) return pop;
+        pop = document.createElement('div');
+        pop.id = 'planner-hovercard';
+        pop.hidden = true;
+        pop.addEventListener('mouseenter', function() { cancelHide(); cancelSwitch(); });
+        pop.addEventListener('mouseleave', scheduleHide);
+        document.body.appendChild(pop);
+        return pop;
+    }
+
+    function cancelHide() { if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; } }
+    function scheduleHide() { cancelHide(); hideTimer = setTimeout(hide, 150); }
+    function cancelSwitch() { if (switchTimer) { clearTimeout(switchTimer); switchTimer = null; } pendingCard = null; }
+    function hide() { cancelHide(); cancelSwitch(); currentCard = null; if (pop) pop.hidden = true; window.__plannerHoverActive = false; }
+
+    // Decide how to reveal `card`: instantly if nothing is shown yet, otherwise
+    // after SWITCH_DELAY so a cursor en route to the open popover doesn't swap.
+    function requestCard(card) {
+        if (card === currentCard) { cancelHide(); cancelSwitch(); return; }
+        if (pop && !pop.hidden) {
+            cancelHide(); // keep the current popover up while the cursor travels
+            if (card === pendingCard) return;
+            cancelSwitch();
+            pendingCard = card;
+            switchTimer = setTimeout(function() { switchTimer = null; pendingCard = null; show(card); }, SWITCH_DELAY);
+        } else {
+            cancelSwitch();
+            show(card);
+        }
+    }
+
+    function show(card) {
+        const data = card.querySelector('.planner-hovercard-data');
+        if (!data) return;
+        const p = ensurePop();
+        cancelHide();
+        cancelSwitch();
+        currentCard = card;
+        p.innerHTML = data.innerHTML;
+        p.hidden = false;
+        window.__plannerHoverActive = true;
+        position(p, card);
+    }
+
+    function position(p, card) {
+        const r = card.getBoundingClientRect();
+        const margin = 8, gap = 6;
+        const pw = p.offsetWidth, ph = p.offsetHeight;
+        let left = Math.min(r.left, window.innerWidth - margin - pw);
+        if (left < margin) left = margin;
+        let top = r.bottom + gap;
+        if (top + ph > window.innerHeight - margin) top = r.top - ph - gap;
+        if (top < margin) top = margin;
+        p.style.left = left + 'px';
+        p.style.top = top + 'px';
+    }
+
+    document.body.addEventListener('mouseover', function(e) {
+        if (dragging) return;
+        const card = e.target.closest('.workspace-item, .planner-slot-filled');
+        if (card) {
+            requestCard(card);
+        } else if (pop && pop.contains(e.target)) {
+            cancelHide();
+            cancelSwitch();
+        }
+    });
+
+    document.body.addEventListener('mouseout', function(e) {
+        const card = e.target.closest('.workspace-item, .planner-slot-filled');
+        if (!card) return;
+        const to = e.relatedTarget;
+        if (to && (card.contains(to) || (pop && pop.contains(to)))) return;
+        scheduleHide();
+    });
+
+    document.body.addEventListener('dragstart', function() { dragging = true; hide(); }, true);
+    document.body.addEventListener('dragend', function() { dragging = false; }, true);
+    window.addEventListener('scroll', hide, true);
+    document.body.addEventListener('htmx:beforeSwap', hide);
+})();
+</script>
+
+{% endblock %}

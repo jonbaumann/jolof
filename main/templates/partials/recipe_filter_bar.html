@@ -1,0 +1,159 @@
+{% comment %}
+The single filter/sort control for every recipe view.
+
+Deliberately rendered once by recipes.html, OUTSIDE the htmx-swapped
+#recipe-results block: the list view used to carry its own copy inside the
+results, which meant duplicate element ids and -- worse -- a filter matching
+nothing hid the checkbox you needed to switch it back off.
+{% endcomment %}
+<div class="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">
+    <button class="btn btn-outline-secondary" type="button" id="filter-toggle"
+            data-bs-toggle="collapse" data-bs-target="#filter-panel"
+            aria-controls="filter-panel" aria-expanded="false">
+        <i class="bi bi-funnel"></i> Filters
+        <span class="badge rounded-pill text-bg-primary ms-1" id="filter-count" hidden>0</span>
+        <i class="bi bi-chevron-down ms-1 small filter-chevron"></i>
+    </button>
+
+    {% comment %}
+    The filters are sticky (cookie-backed), so a collapsed panel could quietly
+    hide why the list looks short. These chips keep that visible.
+    {% endcomment %}
+    <div class="d-flex flex-wrap align-items-center gap-1 d-none" id="filter-chips">
+        <span class="badge text-bg-secondary" id="chip-cooked" hidden>Cooked</span>
+        <span class="badge text-bg-secondary" id="chip-favorites" hidden>Favorites</span>
+        <span class="badge text-bg-secondary" id="chip-public" hidden>Public</span>
+    </div>
+</div>
+
+<div class="collapse" id="filter-panel">
+    <div class="border rounded p-3 mb-2">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            {% if view != 'list' %}
+            <div>
+                <select name="sort_by" id="sort_by" class="form-select w-auto" aria-label="Sort By"
+                    hx-get="{% url 'recipes' %}"
+                    hx-trigger="change"
+                    hx-target="#recipe-results"
+                    hx-include="#search_term">
+                <option value="">-- Sort By --</option>
+                <option {% if sort_by == 'recipe-name' %} selected {% endif %}value="recipe-name">Recipe Name</option>
+                <option {% if sort_by == 'recently-added' %} selected {% endif %}value="recently-added">Recently Added</option>
+                <option {% if sort_by == 'highest-rating' %} selected {% endif %}value="highest-rating">Rating</option>
+                <option {% if sort_by == 'most-tags' %} selected {% endif %}value="most-tags">Tags</option>
+                <option {% if sort_by == 'complexity-asc' %} selected {% endif %}value="complexity-asc">Complexity (Low to High)</option>
+                <option {% if sort_by == 'complexity-desc' %} selected {% endif %}value="complexity-desc">Complexity (High to Low)</option>
+                <option {% if sort_by == 'effort-asc' %} selected {% endif %}value="effort-asc">Effort (Low to High)</option>
+                <option {% if sort_by == 'effort-desc' %} selected {% endif %}value="effort-desc">Effort (High to Low)</option>
+                <option {% if sort_by == 'healthiness-asc' %} selected {% endif %}value="healthiness-asc">Healthiness (Low to High)</option>
+                <option {% if sort_by == 'healthiness-desc' or sort_by == 'healthiness' %} selected {% endif %}value="healthiness-desc">Healthiness (High to Low)</option>
+                <option {% if sort_by == 'favorites-desc' %} selected {% endif %}value="favorites-desc">Favorites First</option>
+                <option {% if sort_by == 'public-desc' %} selected {% endif %}value="public-desc">Public First</option>
+                </select>
+            </div>
+            {% else %}
+            {% comment %}List view sorts from its column headers, so it only needs
+            this one shortcut rather than the whole Sort By select.{% endcomment %}
+            <div class="form-check form-check-inline me-0" title="Sort by the date the recipe was added">
+                <input class="form-check-input" type="checkbox" id="sort-recently-added"
+                       {% if sort_by == 'recently-added' %}checked{% endif %}
+                       hx-get="{% url 'recipes' %}"
+                       hx-target="#recipe-results"
+                       hx-include="#search_term"
+                       hx-vals='js:{sort_by: document.getElementById("sort-recently-added").checked ? "recently-added" : "recipe-name"}'>
+                <label class="form-check-label" for="sort-recently-added">
+                    Newest first
+                </label>
+            </div>
+            {% endif %}
+
+            {% comment %}Separates sorting from filtering without spending words on it.{% endcomment %}
+            <div class="vr d-none d-sm-block"></div>
+
+            <div>
+                {% include 'partials/cooked_filter_checkbox.html' %}
+                {% include 'partials/favorites_filter_checkbox.html' %}
+                {% include 'partials/public_filter_checkbox.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set the starting state synchronously, before paint, so the panel doesn't
+// flash open on a phone.
+(function () {
+    var panel = document.getElementById('filter-panel');
+    var toggle = document.getElementById('filter-toggle');
+    var stored = null;
+    try { stored = localStorage.getItem('jolof-filters-open'); } catch (e) {}
+    // No preference stored yet: open on a roomy screen, collapsed on a phone.
+    var open = stored === null
+        ? window.matchMedia('(min-width: 992px)').matches
+        : stored === '1';
+    if (open) {
+        panel.classList.add('show');
+        toggle.setAttribute('aria-expanded', 'true');
+    }
+})();
+
+(function () {
+    var boxes = {
+        'cooked-only-toggle': 'chip-cooked',
+        'favorites-only-toggle': 'chip-favorites',
+        'public-only-toggle': 'chip-public'
+    };
+    var panel = document.getElementById('filter-panel');
+    var badge = document.getElementById('filter-count');
+    var chips = document.getElementById('filter-chips');
+
+    function checked(id) {
+        var el = document.getElementById(id);
+        return !!(el && el.checked);
+    }
+
+    // Every filter rides along on every filter request, so the server never has
+    // to fall back to the cookie for the two the user didn't just click.
+    // Called from hx-vals as 'js:{...jolofFilterVals()}' -- the braces matter:
+    // htmx wraps any hx-vals expression that doesn't start with '{' in braces
+    // of its own, so a bare call becomes '{jolofFilterVals()}' and throws
+    // before the request is ever built.
+    window.jolofFilterVals = function () {
+        return {
+            cooked_only: checked('cooked-only-toggle') ? '1' : '0',
+            favorites_only: checked('favorites-only-toggle') ? '1' : '0',
+            public_only: checked('public-only-toggle') ? '1' : '0'
+        };
+    };
+
+    function sync() {
+        var active = 0;
+        Object.keys(boxes).forEach(function (box) {
+            var on = checked(box);
+            if (on) { active++; }
+            var chip = document.getElementById(boxes[box]);
+            if (chip) { chip.hidden = !on; }
+        });
+        badge.textContent = active;
+        badge.hidden = active === 0;
+        // The chips only say anything the open panel isn't already showing.
+        // Toggled via d-none, not the hidden attribute: the container is d-flex,
+        // and Bootstrap's display utilities are !important, so [hidden] loses.
+        chips.classList.toggle('d-none', active === 0 || panel.classList.contains('show'));
+    }
+
+    Object.keys(boxes).forEach(function (box) {
+        var el = document.getElementById(box);
+        if (el) { el.addEventListener('change', sync); }
+    });
+
+    function remember(value) {
+        try { localStorage.setItem('jolof-filters-open', value); } catch (e) {}
+        sync();
+    }
+    panel.addEventListener('shown.bs.collapse', function () { remember('1'); });
+    panel.addEventListener('hidden.bs.collapse', function () { remember('0'); });
+
+    sync();
+})();
+</script>

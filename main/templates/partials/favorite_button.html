@@ -1,0 +1,30 @@
+{% comment %}
+Heart toggle for one recipe. Swaps itself out on click.
+
+variant controls the chrome only, never the behaviour:
+  plain   - borderless heart; what every view currently uses
+  default - bordered button, for sitting alongside other buttons
+icon_class is any extra class for the icon itself (e.g. fs-4 to size it up),
+which is how each view tunes the heart to the type around it.
+
+Both are echoed back through hx-vals so the button this swaps itself for keeps
+the same appearance.
+{% endcomment %}
+<span id="favorite-btn-{{ recipe_id }}">
+  <button class="btn btn-sm {% if variant == 'plain' %}btn-link p-0 border-0 lh-1{% elif is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %}"
+          aria-label="{% if is_favorite %}Favorited — click to remove{% else %}Add to favorites{% endif %}"
+          aria-pressed="{% if is_favorite %}true{% else %}false{% endif %}"
+          data-bs-toggle="tooltip" data-bs-placement="top"
+          title="{% if is_favorite %}Favorited — click to remove{% else %}Add to favorites{% endif %}"
+          hx-post="{% url 'favorite-toggle' recipe_id %}"
+          hx-vals='{"variant": "{{ variant|default:"default" }}", "icon_class": "{{ icon_class }}"}'
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          hx-target="#favorite-btn-{{ recipe_id }}"
+          hx-swap="outerHTML">
+    {% if is_favorite %}
+    <i class="bi bi-heart-fill {{ icon_class }}"{% if variant == 'plain' %} style="color: #dc3545"{% endif %}></i>
+    {% else %}
+    <i class="bi bi-heart {{ icon_class }}"{% if variant == 'plain' %} style="color: #8c8c8c"{% endif %}></i>
+    {% endif %}
+  </button>
+</span>

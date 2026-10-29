@@ -1,0 +1,39 @@
+{% extends 'main/base.html' %}
+{% block title %}Platform Settings{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width: 720px;">
+    <h3>Platform Settings</h3>
+    <p class="text-secondary">Settings that apply to everyone using Jolof.</p>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Audit log retention</h5>
+            <div id="audit-retention">
+                {% include 'partials/audit_retention_form.html' %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">API sessions</h5>
+            <div id="api-settings">
+                {% include 'partials/api_settings_form.html' %}
+            </div>
+            <h6 class="mt-4">Active sessions</h6>
+            {% include 'partials/api_sessions.html' %}
+            <div class="small mt-2"><a href="{% url 'api-reference' %}">API Reference</a> · <a href="{% url 'api-docs' %}">Interactive docs</a></div>
+        </div>
+    </div>
+
+    <div class="card mt-4 border-danger">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <h5 class="card-title mb-1">Delete all recipes</h5>
+                <div class="text-secondary small">Permanently removes all {{ recipe_count }} recipe{{ recipe_count|pluralize }}. You'll be asked to confirm.</div>
+            </div>
+            <a href="{% url 'delete-all-recipes' %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete All Recipes…</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

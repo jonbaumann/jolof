@@ -1,0 +1,8 @@
+{% extends 'main/base.html' %}
+{% block title %}Edit Profile{% endblock %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h3>Edit Profile</h3>
+{% crispy form %}
+<a href="{% url 'profile' %}" class="btn btn-outline-secondary">Cancel</a>
+{% endblock %}

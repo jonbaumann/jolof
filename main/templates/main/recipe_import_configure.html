@@ -1,0 +1,29 @@
+{% extends 'main/base.html' %}
+{% block title %}Import Recipes from CSV{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h3 class="mb-1">Import Recipes from CSV</h3>
+
+        {% comment %}
+        Swapped wholesale: the form (with errors on it while it's being
+        corrected), then the progress bar, then the results.
+        {% endcomment %}
+        <div id="importPanel">
+            {% include 'partials/csv_import_form.html' %}
+        </div>
+    </div>
+</div>
+
+<script>
+  // Delegated so the buttons keep working after htmx swaps the panel.
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('#selectAll, #selectNone');
+    if (!button) return;
+    const wanted = button.id === 'selectAll';
+    document.querySelectorAll('#importPanel input[name="fields"]')
+      .forEach(box => { box.checked = wanted; });
+  });
+</script>
+{% endblock %}

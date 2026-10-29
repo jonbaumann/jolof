@@ -1,0 +1,41 @@
+{% comment %}
+Hidden hover-popover body for a meal-planner recipe card. Expects `recipe` in
+context. Rendered (display:none) inside each recipe-backed card; its markup is
+cloned into the shared floating #planner-hovercard on hover. See the hover JS in
+meal_planner.html.
+{% endcomment %}
+<div class="planner-hovercard-data">
+  <a href="{% url 'recipe-detail' recipe.slug %}" class="planner-hovercard-title" target="_blank" rel="noopener">{{ recipe.name }}</a>
+  {% if recipe.rating %}
+  <div class="planner-hovercard-stars">
+    {% for i in "12345" %}
+      {% if forloop.counter <= recipe.rating %}
+      <i class="bi bi-star-fill" style="color: #ffc107"></i>
+      {% else %}
+      <i class="bi bi-star" style="color: #8c8c8c"></i>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="planner-hovercard-metrics">
+    <div class="planner-hovercard-metric">
+      <span class="planner-hovercard-metric-label">Effort</span>
+      <span>{% include 'partials/meal_planner_metric.html' with value=recipe.effort %}</span>
+    </div>
+    <div class="planner-hovercard-metric">
+      <span class="planner-hovercard-metric-label">Complexity</span>
+      <span>{% include 'partials/meal_planner_metric.html' with value=recipe.complexity %}</span>
+    </div>
+    <div class="planner-hovercard-metric">
+      <span class="planner-hovercard-metric-label">Healthiness</span>
+      <span>{% include 'partials/meal_planner_metric.html' with value=recipe.health good_high=True %}</span>
+    </div>
+  </div>
+  {% if recipe.tags.all %}
+  <div class="planner-hovercard-tags">
+    {% for tag in recipe.tags.all|slice:":10" %}
+    <span class="badge badge-tag">{{ tag }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

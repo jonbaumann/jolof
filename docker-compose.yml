@@ -1,0 +1,42 @@
+# Jolof and its Postgres database, for running it yourself.
+#
+#   cp .env.example .env               # then fill it in (DB_HOST=db)
+#   docker compose up -d --build
+#   docker compose exec app python manage.py migrate
+#   docker compose exec app python manage.py collectstatic --noinput
+#   docker compose exec app python manage.py createsuperuser
+#
+# The app listens on 127.0.0.1:8000 only. Put your own reverse proxy in front
+# of it for HTTPS; see "Running in production" in the README.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

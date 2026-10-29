@@ -1,0 +1,11 @@
+<div class="form-check form-check-inline" title="Only recipes with a live public share link">
+    <input class="form-check-input" type="checkbox" id="public-only-toggle"
+           {% if public_only %}checked{% endif %}
+           hx-get="{% url 'recipes' %}"
+           hx-target="#recipe-results"
+           hx-include="#search_term, #sort_by"
+           hx-vals='js:{...jolofFilterVals()}'>
+    <label class="form-check-label" for="public-only-toggle">
+        Public
+    </label>
+</div>

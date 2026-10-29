@@ -1,0 +1,11 @@
+{% comment %}
+One allergy-info flag. The column can be null -- older recipes were imported
+without these ever being answered -- and an unanswered flag reads as "no", the
+same as an unticked box on the edit form.
+Include with: {% include 'partials/dietary_flag.html' with value=gluten_free %}
+{% endcomment %}
+{% if value %}
+    <span title="Yes">&#x2705;</span>
+{% else %}
+    <span title="No">&#10060;</span>
+{% endif %}

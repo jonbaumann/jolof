@@ -1,0 +1,12 @@
+{% comment %}
+Renders a single 1-5 rating as a colored numbered circle.
+  value  -- the 1-5 rating (or empty/None)
+  invert -- when true, high is good (green) and low is bad (red), e.g. healthiness.
+            when false/omitted, low is good (green) and high is bad (red), e.g. effort/complexity.
+{% endcomment %}
+{% if value %}
+    <i class="bi bi-{{ value }}-circle-fill h5 mb-0"
+       style="color: {% if invert %}{% if value <= 1 %}red{% elif value <= 3 %}orange{% else %}green{% endif %}{% else %}{% if value <= 2 %}green{% elif value <= 4 %}orange{% else %}red{% endif %}{% endif %};"></i>
+{% else %}
+    <span class="text-muted">--</span>
+{% endif %}

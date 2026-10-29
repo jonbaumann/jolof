@@ -1,0 +1,502 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/use-bootstrap-tag@2.2.2/dist/use-bootstrap-tag.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/use-bootstrap-tag@2.2.2/dist/use-bootstrap-tag.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+    <title>{% block title %}Jolof{% endblock %}</title>
+    <link rel="icon" href="{% static 'branding/favicon.ico' %}" sizes="any">
+    <link rel="icon" type="image/png" href="{% static 'branding/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'branding/apple-touch-icon.png' %}">
+    <script>
+    // Theme. Set here in <head>, before anything renders, so a page never
+    // flashes the wrong one. Logged in, the Preferences page decides; logged
+    // out (the login page), the browser's last-used theme does. A page can
+    // force one (the public recipe page is always dark).
+    (function () {
+        const html = document.documentElement;
+        const valid = ['light', 'dark', 'auto'];
+        const forced = '{{ force_theme|default:"" }}';
+        {% if theme_preference is None %}const preference = null;{% else %}const preference = '{{ theme_preference }}';{% endif %}
+        let stored = null;
+        try { stored = localStorage.getItem('theme'); } catch (e) {}
+        if (!valid.includes(stored)) stored = null;
+
+        const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const resolve = mode => mode === 'auto' ? (darkQuery.matches ? 'dark' : 'light') : mode;
+
+        let mode;
+        if (forced) {
+            mode = forced;
+        } else if (preference) {
+            mode = preference;
+        } else {
+            mode = stored || 'light';
+        }
+        html.setAttribute('data-bs-theme', resolve(mode));
+        if (forced) return;
+
+        if (mode === 'auto') {
+            darkQuery.addEventListener('change', () => html.setAttribute('data-bs-theme', resolve('auto')));
+        }
+        if (preference !== null) {
+            // Remembered so the login page matches after logging out.
+            try { localStorage.setItem('theme', mode); } catch (e) {}
+        }
+        {% if theme_preference == '' %}
+        // No preference saved yet: keep the theme this browser already had.
+        const body = new FormData();
+        body.append('theme', mode);
+        fetch('{% url "theme-adopt" %}', {
+            method: 'POST', body: body, headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        });
+        {% endif %}
+    })();
+    </script>
+    {% block extra_head %}{% endblock %}
+    <style>
+    /* custom classes */
+     .badge-tag {
+        background-color: #8B4789;
+        color: white;
+    }
+    .badge.bg-recipe-tag {
+        background-color: #8B4789;
+        color: white;
+    }
+    .btn-recipe-tag {
+    background-color: #8B4789 !important;
+    color: white !important;
+    }
+
+    .tag-status-size {
+    height: 30px !important; /* using !important to prevent override */
+    /* You may also need to adjust line-height and padding for height changes */
+    line-height: 15px;
+    padding-left: 10px; 
+    padding-top: 5px;
+    margin-top: 10px;
+    }
+
+
+    /* The Filters button's chevron flips when its panel opens, so the button
+       reads as something that expands rather than navigates. Bootstrap keeps
+       aria-expanded in sync on collapse toggles. */
+    .filter-chevron {
+        /* inline-block is load-bearing: transforms are ignored on inline
+           elements, and Bootstrap Icons' <i> is inline by default, so without
+           this the rotation computes but never renders. */
+        display: inline-block;
+        transition: transform 0.15s ease-in-out;
+    }
+    #filter-toggle[aria-expanded="true"] .filter-chevron {
+        transform: rotate(180deg);
+    }
+
+    .tag-suggest-dropdown {
+        position: absolute;
+        z-index: 1050;
+        top: 100%;
+        left: 0;
+        min-width: 12rem;
+        max-height: 220px;
+        overflow-y: auto;
+        box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.15);
+    }
+    .tag-suggest-dropdown .list-group-item.active {
+        background-color: #8B4789;
+        border-color: #8B4789;
+        color: white;
+    }
+
+    @media (min-width: 768px) {
+    .position-md-absolute {
+        position: absolute !important;
+    }
+}
+
+    /* Style Overrides (light theme only) */
+    .card-title a {
+        text-decoration: none;
+    }
+    .card-title a:hover {
+        text-decoration: underline;
+    }
+
+    /* Dark theme styles */
+    [data-bs-theme="dark"] {
+        background-color: #212529;
+        color: #dee2e6;
+    }
+    [data-bs-theme="dark"] .recipe-card {
+        background-color: #2c3136;
+        border-color: #495057;
+    }
+    [data-bs-theme="dark"] .card {
+        background-color: #2c3136;
+        border-color: #495057;
+        color: #dee2e6;
+    }
+    [data-bs-theme="dark"] .card-title a {
+        color: #dee2e6;
+        text-decoration: none;
+    }
+    [data-bs-theme="dark"] .card-title a:hover {
+        color: #dee2e6;
+        text-decoration: underline;
+    }
+    [data-bs-theme="dark"] .form-control,
+    [data-bs-theme="dark"] .form-select {
+        background-color: #2c3136;
+        border-color: #495057;
+        color: #dee2e6;
+    }
+    
+    /* Logo artwork has a light-background and a dark-background version;
+       show whichever matches the current theme. */
+    .logo-on-dark { display: none; }
+    [data-bs-theme="dark"] .logo-on-light { display: none; }
+    [data-bs-theme="dark"] .logo-on-dark { display: inline; }
+    .navbar-brand img {
+        height: 32px;
+        width: auto;
+    }
+
+    /* Navbar — a distinct surface that contrasts with the page in both themes */
+    .navbar.navbar-jolof {
+        background-color: #2c3e50;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    [data-bs-theme="dark"] .navbar.navbar-jolof {
+        background-color: #2c3136;
+        border-bottom: 1px solid #495057;
+    }
+    /* Version footer stays fixed to the bottom of the viewport on every page;
+       the body padding keeps the end of the content from hiding behind it. */
+    body {
+        padding-bottom: 2.5rem;
+    }
+    body > footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1020;
+        background-color: var(--bs-body-bg);
+        border-top: 1px solid var(--bs-border-color);
+    }
+    /* Permissions defined ahead of the feature that will use them (the API ones).
+       Bootstrap's orange with dark text reads well on both light and dark themes. */
+    .badge-future {
+        background-color: var(--bs-orange);
+        color: #212529;
+    }
+    </style>
+</head>
+<body{% if force_theme %} data-force-theme="{{ force_theme }}"{% endif %}>
+<!-- <body style="background-image: url('{% static 'background-3.jpg' %}'); background-size: cover; background-attachment: fixed; background-position: center;"> -->
+    {% block navbar %}
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-jolof">
+      <div class="container">
+        <a class="navbar-brand" href="{% url 'recipes' %}">
+          {# The navbar is a dark surface in both themes, so it always uses the dark-background logo. #}
+          <img src="{% static 'branding/jolof-wordmark-dark.png' %}" alt="Jolof">
+        </a>
+        {% if user.is_authenticated %}
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+              <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+              {% if can.mealplan_read %}
+              <li class="nav-item">
+                <a class="nav-link" href="/meal-planner/">
+                  <i class="bi bi-calendar3"></i> Meal Planner
+                </a>
+              </li>
+              {% endif %}
+              {% if can.recipe_read %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarRecipesDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Recipes
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarRecipesDropdownMenuLink">
+                  <li><a class="dropdown-item" href="/recipes/">Recipes</a></li>
+                  {% if can.recipe_read_write %}
+                  <li><a class="dropdown-item" href="/recipe-add/">New Recipe</a></li>
+                  <li><a class="dropdown-item" href="/recipe-add-url/">Add From URL</a></li>
+                  {% endif %}
+                  <li><a class="dropdown-item" href="{% url 'recipes' %}?public_only=1">Public Recipes</a></li>
+                </ul>
+              </li>
+              {% endif %}
+              {% if can.recipe_read or can.mealplan_read %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarToolsDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Tools
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarToolsDropdownMenuLink">
+                  {% if can.mealplan_read %}
+                  <li><a class="dropdown-item" href="/meal-planner/">Meal Planner</a></li>
+                  {% endif %}
+                  {% if can.recipe_read %}
+                  <li><a class="dropdown-item" href="/misc-tools/">Misc Tools</a></li>
+                  {% if can.recipe_read_write %}
+                  <li><a class="dropdown-item" href="/recipe-import/">CSV Import</a></li>
+                  {% endif %}
+                  <li><a class="dropdown-item" href="/recipe-export/">CSV Export</a></li>
+                  {% endif %}
+                </ul>
+              </li>
+              {% endif %}
+              {% if can.user_mgmt or can.platform_admin or can.audit_log %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarAdminDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin" title="Admin">
+                  <i class="bi bi-gear-fill"></i><span class="d-lg-none ms-1">Admin</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="navbarAdminDropdownMenuLink">
+                  {% if can.user_mgmt %}
+                  <li><a class="dropdown-item" href="{% url 'users' %}">Users</a></li>
+                  <li><a class="dropdown-item" href="{% url 'roles' %}">Roles</a></li>
+                  <li><a class="dropdown-item" href="{% url 'households' %}">Households</a></li>
+                  {% endif %}
+                  {% if can.platform_admin %}
+                  <li><a class="dropdown-item" href="{% url 'platform-settings' %}">Platform Settings</a></li>
+                  {% endif %}
+                  {% if can.audit_log %}
+                  {% if can.user_mgmt or can.platform_admin %}<li><hr class="dropdown-divider"></li>{% endif %}
+                  <li><a class="dropdown-item" href="{% url 'audit-log' %}">Audit Log</a></li>
+                  {% endif %}
+                </ul>
+              </li>
+              {% endif %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-person-circle"></i> {{ user.first_name|default:user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="navbarUserDropdownMenuLink">
+                  <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                  <li><a class="dropdown-item" href="{% url 'preferences' %}">Preferences</a></li>
+                  {% if can.recipe_read %}
+                  <li><a class="dropdown-item" href="{% url 'recipes' %}?favorites_only=1">My Favorites</a></li>
+                  {% endif %}
+                  {% if can.any_api %}
+                  <li><a class="dropdown-item" href="{% url 'api-reference' %}">API Reference</a></li>
+                  {% endif %}
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <form method="post" action="{% url 'logout' %}">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item">Logout</button>
+                    </form>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        {% endif %}
+      </div>
+    </nav>
+    {% endblock %}
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+    <script>
+    // Bootstrap tooltips are opt-in, so wire up every data-bs-toggle="tooltip".
+    // htmx.onLoad runs for the initial page and again for each piece of
+    // content htmx swaps in, so swapped-in buttons get their tooltips too.
+    htmx.onLoad(function (root) {
+        const selector = '[data-bs-toggle="tooltip"]';
+        const els = root.matches && root.matches(selector) ? [root] : [];
+        els.push(...root.querySelectorAll(selector));
+        els.forEach(el => bootstrap.Tooltip.getOrCreateInstance(el));
+    });
+    // An open tooltip lives in <body>, not inside its button, so when htmx
+    // replaces the button (e.g. toggling a favorite) the tooltip would be
+    // left stranded on screen. Dispose of it along with the old element.
+    document.addEventListener('htmx:beforeCleanupElement', function (evt) {
+        const tip = bootstrap.Tooltip.getInstance(evt.target);
+        if (tip) tip.dispose();
+    });
+    </script>
+    <script>
+    /**
+     * Wires a live, server-backed suggestion dropdown onto a UseBootstrapTag
+     * field. Call after UseBootstrapTag(tagField) has run.
+     *
+     * @param {HTMLInputElement} tagField - the original (now hidden) tag input.
+     * @param {object} ubTag - the object returned by UseBootstrapTag(tagField).
+     * @param {string} suggestUrl - endpoint returning a JSON array of "label:value" strings for ?q=.
+     */
+    function attachTagAutocomplete(tagField, ubTag, suggestUrl) {
+        // UseBootstrapTag inserts its wrapper right after the original input,
+        // with the live typing box as the last child inside it.
+        const wrapper = tagField.nextElementSibling;
+        const typingInput = wrapper && wrapper.querySelector('.input-wrapper input');
+        if (!typingInput) return;
+
+        // The library's own CSS already makes .input-wrapper position:relative,
+        // so anchoring here (rather than the outer container) puts the dropdown
+        // right under wherever typing is happening, not the widget's left edge.
+        const inputWrapper = typingInput.parentElement;
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'tag-suggest-dropdown list-group';
+        dropdown.style.display = 'none';
+        inputWrapper.appendChild(dropdown);
+
+        let items = [];
+        let activeIndex = -1;
+        let debounceTimer = null;
+        let requestId = 0;
+
+        function hide() {
+            dropdown.style.display = 'none';
+            dropdown.innerHTML = '';
+            items = [];
+            activeIndex = -1;
+        }
+
+        function highlight() {
+            [...dropdown.children].forEach((el, i) => el.classList.toggle('active', i === activeIndex));
+            if (activeIndex >= 0) dropdown.children[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        function select(index) {
+            const tag = items[index];
+            if (!tag) return;
+            ubTag.addValue(tag);
+            // Clear through the library's own input handler so its internal
+            // state (not just the DOM value) resets too.
+            typingInput.value = '';
+            typingInput.dispatchEvent(new Event('input', { bubbles: true }));
+            hide();
+            typingInput.focus();
+            if (window.htmx) htmx.trigger(tagField, 'tagchange');
+        }
+
+        function render(suggestions) {
+            const existing = ubTag.getValues();
+            items = suggestions.filter(s => !existing.includes(s));
+            activeIndex = -1;
+            dropdown.innerHTML = '';
+            if (!items.length) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            items.forEach((tag, i) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'list-group-item list-group-item-action py-1 px-2';
+                item.textContent = tag;
+                // preventDefault on mousedown keeps focus in the typing input,
+                // so blur never fires and commits the raw in-progress text.
+                item.addEventListener('mousedown', e => e.preventDefault());
+                item.addEventListener('click', () => select(i));
+                dropdown.appendChild(item);
+            });
+            dropdown.style.display = 'block';
+        }
+
+        typingInput.addEventListener('input', () => {
+            const query = typingInput.value.trim();
+            clearTimeout(debounceTimer);
+            if (!query) { hide(); return; }
+            debounceTimer = setTimeout(() => {
+                const thisRequest = ++requestId;
+                fetch(`${suggestUrl}?q=${encodeURIComponent(query)}`)
+                    .then(r => r.ok ? r.json() : [])
+                    .then(data => { if (thisRequest === requestId) render(data); })
+                    .catch(() => {});
+            }, 150);
+        });
+
+        typingInput.addEventListener('blur', hide);
+
+        // Capture-phase, on an ancestor of the typing input, so this runs before
+        // UseBootstrapTag's own keydown handler (bound directly on the input)
+        // sees the event -- letting Enter pick the highlighted suggestion
+        // instead of committing whatever partial text has been typed.
+        wrapper.addEventListener('keydown', function (e) {
+            if (e.target !== typingInput || dropdown.style.display === 'none') return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                highlight();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = Math.max(activeIndex - 1, 0);
+                highlight();
+            } else if (e.key === 'Enter' && activeIndex >= 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                select(activeIndex);
+            } else if (e.key === 'Escape') {
+                hide();
+            }
+        }, true);
+    }
+    </script>
+
+    <div class="container pt-2" background-color="#0d6efd">
+      {% block content %} {% endblock %}
+    </div>
+
+    {% if whats_new_entries %}
+    <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true" data-dismiss-url="{% url 'whats-new-dismiss' %}">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="whatsNewModalLabel">
+              <i class="bi bi-stars text-warning"></i> What's New in Jolof
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            {% for entry in whats_new_entries %}
+              <h6 class="fw-bold mb-1">
+                Version {{ entry.version }}{% if entry.title %} <span class="text-muted fw-normal">— {{ entry.title }}</span>{% endif %}
+              </h6>
+              <ul class="mb-3">
+                {% for item in entry.items %}<li>{{ item }}</li>{% endfor %}
+              </ul>
+            {% endfor %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it</button>
+          </div>
+        </div>
+      </div>
+      {% csrf_token %}
+    </div>
+    <script>
+    (function () {
+        var el = document.getElementById('whatsNewModal');
+        if (!el || typeof bootstrap === 'undefined') return;
+        var dismissed = false;
+        var modal = new bootstrap.Modal(el);
+        // Any close path (X, "Got it", Esc, backdrop) fires this once.
+        el.addEventListener('hidden.bs.modal', function () {
+            if (dismissed) return;
+            dismissed = true;
+            var input = el.querySelector('[name=csrfmiddlewaretoken]');
+            fetch(el.dataset.dismissUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': input ? input.value : '' },
+            });
+        });
+        modal.show();
+    })();
+    </script>
+    {% endif %}
+
+    <footer class="text-center text-muted py-1" style="font-size: 0.8rem;">
+      Jolof Version {{ app_version }}
+    </footer>
+
+</body>
+</html>

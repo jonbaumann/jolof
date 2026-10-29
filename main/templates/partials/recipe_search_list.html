@@ -1,0 +1,351 @@
+{% load static %}
+{% if num_search_results  > 0 %}
+<div class="row">
+    <div class="col-md-6 col-lg-2">
+        <div class="alert alert-info">
+            {{ num_search_results }} Search Results...
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if view == 'grid' %}
+    <div class="row">
+        {% for recipe in recipe_list %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <div class="card recipe-card h-100">
+                {% if recipe.image %}
+                <a href="{% url 'recipe-detail' recipe.slug %}">
+                    <img src="{{ recipe.image.url }}" class="card-img-top" alt="{{ recipe.name }}" style="height: 200px; object-fit: cover;">
+                </a>
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <i class="bi bi-image text-white" style="font-size: 3rem;"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title d-flex align-items-start gap-2">
+                        <a href="{% url 'recipe-detail' recipe.slug %}">
+                        {{ recipe.name }}
+                        </a>
+                        {% if user.is_authenticated %}
+                        <span class="ms-auto">
+                            {% if recipe.id in favorite_recipe_ids %}
+                                {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=True variant='plain' icon_class='fs-3' %}
+                            {% else %}
+                                {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=False variant='plain' icon_class='fs-3' %}
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                    </h5>
+                    {% if recipe.rating %}
+                    <div class="rating mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= recipe.rating %}
+                            <i class="bi bi-star-fill" style="color: #ffc107"></i>
+                            {% else %}
+                            <i class="bi bi-star" style="color: #8c8c8c"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="mb-2">
+                        {% for tag in recipe.tags.all|slice:":10" %}
+                        <span class="badge badge-tag">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'recipe-detail' recipe.slug %}" class="btn btn-sm btn-primary">View Recipe</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No recipes found. <a href="{% url 'recipe-add' %}">Add a recipe!</a></div>
+        </div>
+        {% endfor %}
+    </div>
+{% elif view == 'list' %}
+    {% if recipe_list %}
+        <div class="row">
+            <div class="col-10">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th class="col-1">Thumb</th>
+                            <th class="text-center text-nowrap sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by={% if sort_by == 'favorites-desc' %}favorites-asc{% else %}favorites-desc{% endif %}"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Sort by favorites">
+                                <i class="bi bi-heart"></i> {% if sort_by == 'favorites-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% elif sort_by == 'favorites-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="text-center text-nowrap sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by={% if sort_by == 'public-desc' %}public-asc{% else %}public-desc{% endif %}"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Sort by whether the recipe has a public link">
+                                <i class="bi bi-globe"></i> {% if sort_by == 'public-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% elif sort_by == 'public-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="col-2 sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by=highest-rating"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Sort by rating">
+                                Rating {% if sort_column == 'rating' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="text-center text-nowrap sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by={% if sort_by == 'effort-asc' %}effort-desc{% else %}effort-asc{% endif %}"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Effort (click to sort)">
+                                Eff. {% if sort_by == 'effort-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% elif sort_by == 'effort-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="text-center text-nowrap sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by={% if sort_by == 'complexity-asc' %}complexity-desc{% else %}complexity-asc{% endif %}"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Complexity (click to sort)">
+                                Cmplx. {% if sort_by == 'complexity-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% elif sort_by == 'complexity-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="text-center text-nowrap sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by={% if sort_by == 'healthiness-desc' or sort_by == 'healthiness' %}healthiness-asc{% else %}healthiness-desc{% endif %}"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Healthiness (click to sort)">
+                                Hlth. {% if sort_by == 'healthiness-desc' or sort_by == 'healthiness' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% elif sort_by == 'healthiness-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="col-3 sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by=recipe-name"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Sort by name">
+                                Name {% if sort_column == 'name' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="col-2 sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by=most-tags"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Sort by number of tags">
+                                Tags {% if sort_column == 'tags' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                            <th class="col-2 sortable" style="cursor: pointer"
+                                hx-get="{% url 'recipes' %}?sort_by={% if sort_by == 'in-planner-desc' %}in-planner-asc{% else %}in-planner-desc{% endif %}"
+                                hx-target="#recipe-results" hx-include="#search_term"
+                                title="Sort by whether the recipe is in the meal planner">
+                                Actions <i class="bi bi-calendar3 small ms-4"></i> {% if sort_by == 'in-planner-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% elif sort_by == 'in-planner-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipe in recipe_list %}
+                        <tr>
+                            <td>
+                                {% if recipe.image %}
+                                    <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" style="height: 50px; width: 50px;">
+                                {% else %}
+                                    <img src="{% static '/fork_knife.svg' %}" style="height: 50px">
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if user.is_authenticated %}
+                                    {% if recipe.id in favorite_recipe_ids %}
+                                        {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=True variant='plain' icon_class='fs-5' %}
+                                    {% else %}
+                                        {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=False variant='plain' icon_class='fs-5' %}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if recipe.is_public %}
+                                    <a href="{{ recipe.get_public_url }}" target="_blank" rel="noopener"
+                                       class="text-decoration-none" title="Open this recipe's public link">
+                                        <i class="bi bi-globe fs-5"></i>
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if recipe.rating %}
+                                    <div class="rating mb-2">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= recipe.rating %}
+                                            <i class="bi bi-star-fill" style="color: #ffc107"></i>
+                                            {% else %}
+                                            <i class="bi bi-star" style="color: #8c8c8c"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% include 'partials/rating_circle.html' with value=recipe.effort %}
+                            </td>
+                            <td class="text-center">
+                                {% include 'partials/rating_circle.html' with value=recipe.complexity %}
+                            </td>
+                            <td class="text-center">
+                                {% include 'partials/rating_circle.html' with value=recipe.health invert=True %}
+                            </td>
+                            <td>
+                                <a href="{% url 'recipe-detail' recipe.slug %}">{{ recipe.name}}</a>
+                            </td>
+                            <td>
+                                {% for tag in recipe.tags.all|slice:":10" %}
+                                    <span class="badge badge-tag">{{ tag }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 align-items-center">
+                                    {% if can.recipe_read_write %}
+                                    <a class="btn btn-primary btn-sm" href="/recipe-update/{{recipe.id}}/">Edit</a>
+                                    <a class="btn btn-danger btn-sm" href="/recipe-delete/{{recipe.id}}/">Delete</a>
+                                    {% endif %}
+                                    {% if can.mealplan_read_write %}
+                                        {% if recipe.id in workspace_recipe_ids %}
+                                            {% include 'partials/workspace_button_compact.html' with recipe_id=recipe.id in_workspace=True %}
+                                        {% else %}
+                                            {% include 'partials/workspace_button_compact.html' with recipe_id=recipe.id in_workspace=False %}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">No recipes found. <a href="{% url 'recipe-add' %}">Add a recipe!</a></div>
+        </div>
+    {% endif %}
+{% elif view == 'double_list' %}
+    {% if recipe_list %}
+        <div class="row">
+            <div class="col-5">
+                <table class="table">
+                    <tbody>
+                        {% for recipe in recipe_list_left %}
+                        <tr>
+                            <td colspan="2">
+                                <div class="row">
+                                    <div class="col-lg-2 col-md-3 col-sm-4">
+                                        {% if recipe.image %}
+                                            <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" style="height: 40px; width: 40px;">
+                                        {% else %}
+                                            <img src="{% static '/fork_knife.svg' %}" style="height: 40px">
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-lg-10 d-flex align-items-center gap-2">
+                                        <a href="{% url 'recipe-detail' recipe.slug %}">{{ recipe.name}}</a>
+                                        {% if user.is_authenticated %}
+                                            <span class="ms-auto">
+                                            {% if recipe.id in favorite_recipe_ids %}
+                                                {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=True variant='plain' %}
+                                            {% else %}
+                                                {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=False variant='plain' %}
+                                            {% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-5">
+                <table class="table">
+                    <tbody>
+                        {% for recipe in recipe_list_right %}
+                        <tr>
+                            <td colspan="2">
+
+                                <div class="row">
+                                    <div class="col-lg-2 col-md-3 col-sm-4">
+                                        {% if recipe.image %}
+                                            <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" style="height: 40px; width: 40px;">
+                                        {% else %}
+                                            <img src="{% static '/fork_knife.svg' %}" style="height: 40px">
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-lg-10 d-flex align-items-center gap-2">
+                                        <a href="{% url 'recipe-detail' recipe.slug %}">{{ recipe.name}}</a>
+                                        {% if user.is_authenticated %}
+                                            <span class="ms-auto">
+                                            {% if recipe.id in favorite_recipe_ids %}
+                                                {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=True variant='plain' %}
+                                            {% else %}
+                                                {% include 'partials/favorite_button.html' with recipe_id=recipe.id is_favorite=False variant='plain' %}
+                                            {% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">No recipes found. <a href="{% url 'recipe-add' %}">Add a recipe!</a></div>
+        </div>
+    {% endif %}
+{% endif %}
+<div class="row">
+    <div class="col-10">
+        <nav aria-label="Page navigation pb-3">
+            <div class="position-relative d-flex flex-column flex-md-row align-items-center justify-content-md-center">
+
+                {% if recipe_list.has_other_pages %}
+                <!-- pagination controls -->
+                <ul class="pagination justify-content-center mb-2 mb-md-0">
+                    {% if recipe_list.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                        style="cursor: pointer"
+                        hx-get="?page={{ recipe_list.previous_page_number }}&search_term={{ query }}&results_per_page={{ results_per_page}}"
+                        hx-target="#recipe-results">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ recipe_list.number }} of {{ recipe_list.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if recipe_list.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                        style="cursor: pointer"
+                        hx-get="?page={{ recipe_list.next_page_number }}&search_term={{ query }}&results_per_page={{ results_per_page}}"
+                        hx-target="#recipe-results">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                {% else %}
+                    <ul class="pagination justify-content-center mb-2 mb-md-0">
+                        <li class="page-item disabled">
+                            <span class="page-link">Page {{ recipe_list.number }} of {{ recipe_list.paginator.num_pages }}</span>
+                        </li>
+                    </ul>
+                {% endif %}
+
+                <!-- results per page selector -->
+                <div class="d-flex align-items-center gap-2 me-3 align-self-start align-self-md-auto position-md-absolute end-0">
+                    <span>Results:</span>
+                    <select 
+                        class="form-select form-select-sm" 
+                        aria-label="Results per page"
+                        hx-get="{% url 'recipes' %}"
+                        hx-trigger="change"
+                        hx-target="#recipe-results"
+                        name="results_per_page"
+                    >   
+                    
+                        {% for n in per_page_options %}
+                            <option value="{{ n }}" {% if n == results_per_page %}selected{% endif %}>{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+        </nav>
+    </div>
+</div>
+

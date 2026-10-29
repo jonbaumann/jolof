@@ -1,0 +1,46 @@
+{% load static %}
+{% if pairs %}
+    <div class="mb-3 text-secondary">{{ pairs|length }} potential duplicate pair{{ pairs|length|pluralize }} found.</div>
+    {% for pair in pairs %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-2">
+                <span class="badge bg-secondary">{{ pair.ratio }}% match</span>
+            </div>
+            <div class="row g-3">
+                {% for recipe in pair.recipes %}
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 border rounded p-2 h-100">
+                        {% if recipe.image %}
+                            <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" style="height: 60px; width: 60px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static '/fork_knife.svg' %}" style="height: 60px;">
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <a href="{% url 'recipe-detail' recipe.slug %}" target="_blank" rel="noopener">{{ recipe.name }}</a>
+                            {% if recipe.notes %}
+                                <div class="small text-secondary fw-bold mt-1">Notes:</div>
+                                <div class="small text-secondary" style="white-space: pre-line;">{{ recipe.notes }}</div>
+                            {% endif %}
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger"
+                                hx-post="{% url 'find-duplicates-delete' recipe.id %}"
+                                hx-vals='{"threshold": "{{ threshold_percent }}"}'
+                                hx-target="#duplicate-results"
+                                hx-swap="innerHTML"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                hx-confirm="Delete &quot;{{ recipe.name }}&quot;? This cannot be undone.">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i> No duplicate recipes found.
+    </div>
+{% endif %}

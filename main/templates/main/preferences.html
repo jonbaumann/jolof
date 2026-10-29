@@ -1,0 +1,55 @@
+{% extends 'main/base.html' %}
+{% block title %}Preferences{% endblock %}
+{% block content %}
+<h3 class="mb-4 mx-auto" style="max-width: 640px;">Preferences</h3>
+<div class="mx-auto" style="max-width: 640px;">
+  {% include 'partials/messages.html' %}
+  <div class="card">
+    <div class="card-body p-4 p-lg-5">
+      <form method="post">
+        {% csrf_token %}
+
+        <fieldset class="mb-4">
+          <legend class="form-label fs-6">{{ form.theme.label }}</legend>
+          {% for choice in form.theme %}
+          <div class="form-check">
+            {{ choice.tag }}
+            <label class="form-check-label" for="{{ choice.id_for_label }}">
+              {% if choice.data.value == 'light' %}<i class="bi bi-sun me-1"></i>
+              {% elif choice.data.value == 'dark' %}<i class="bi bi-moon me-1"></i>
+              {% else %}<i class="bi bi-circle-half me-1"></i>{% endif %}
+              {{ choice.choice_label }}
+            </label>
+          </div>
+          {% endfor %}
+          <div class="form-text">Saved to your account, so it follows you to every device.
+            "Match my device" follows your system's light or dark setting.</div>
+          {% for error in form.theme.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </fieldset>
+
+        <div class="mb-4">
+          <label for="{{ form.timezone.id_for_label }}" class="form-label">{{ form.timezone.label }}</label>
+          {{ form.timezone }}
+          <div class="form-text">
+            {{ form.timezone.help_text }} It's now {% now "M j, Y H:i T" %}.
+          </div>
+          {% for error in form.timezone.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Preferences</button>
+        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Back to Profile</a>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+// Theme radios: show the choice straight away, before saving.
+document.querySelectorAll('input[name="theme"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+        const dark = radio.value === 'dark' ||
+            (radio.value === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+<div hx-get="{% url 'get-progress' task_id=task_id %}" 
+     hx-trigger="every 500ms"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <h5>Processing...</h5>
+    <div class="small">
+        Do not refresh the page.
+    </div>
+    <br>
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+             role="progressbar"
+             style="width: {{ progress }}%"
+             aria-valuenow="{{ progress }}" 
+             aria-valuemin="0" 
+             aria-valuemax="100">
+            {{ progress }}%
+        </div>
+    </div>
+</div>

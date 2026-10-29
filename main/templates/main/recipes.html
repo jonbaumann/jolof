@@ -1,0 +1,64 @@
+
+{% extends 'main/base.html' %} 
+{% load static %}
+{% block content %}
+{% include 'partials/messages.html' %}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="search-container">
+            <div class="text-secondary mb-1">{{ recipe_count }} Total Recipes</div>
+            <input
+                type="search" 
+                name="search_term" 
+                id="search_term"
+                class="form-control form-control-lg"
+                placeholder="Search recipes, ingredients, or tags..."
+                value="{{ query }}"
+                hx-get="{% url 'recipes' %}"
+                hx-trigger="keyup changed delay:500ms, search"
+                hx-target="#recipe-results"
+                hx-include="#sort_by"
+                hx-indicator="#search-indicator"
+            >
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                {% if can.recipe_read_write %}
+                <a href="{% url 'recipe-add' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle"></i> Add Recipe
+                </a>
+                <a href="{% url 'recipe-add-url' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle"></i> Add From URL
+                </a>
+                {% endif %}
+                <div class="ms-auto d-flex gap-1">
+                    <a href="{% url 'recipes' %}?view=grid" class="btn btn-outline-secondary" aria-label="Grid View" data-bs-toggle="tooltip" data-bs-placement="top" title="Grid View">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-grid-3x3" viewBox="0 0 16 16">
+                            <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5zM1.5 1a.5.5 0 0 0-.5.5V5h4V1zM5 6H1v4h4zm1 4h4V6H6zm-1 1H1v3.5a.5.5 0 0 0 .5.5H5zm1 0v4h4v-4zm5 0v4h3.5a.5.5 0 0 0 .5-.5V11zm0-1h4V6h-4zm0-5h4V1.5a.5.5 0 0 0-.5-.5H11zm-1 0V1H6v4z"/>
+                        </svg>
+                    </a>
+                    <a href="{% url 'recipes' %}?view=list" class="btn btn-outline-secondary" aria-label="List View" data-bs-toggle="tooltip" data-bs-placement="top" title="List View">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"></path>
+                        </svg>
+                    </a>
+                    <a href="{% url 'recipes' %}?view=double_list" class="btn btn-outline-secondary" aria-label="Double List View" data-bs-toggle="tooltip" data-bs-placement="top" title="Double List View">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-layout-split" viewBox="0 0 16 16">
+                            <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm8.5-1v12H14a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1zm-1 0H2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h5.5z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            <div id="search-indicator" class="htmx-indicator spinner-border spinner-border-sm position-absolute" 
+                 style="top: 15px; right: 15px;" role="status">
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        {% include 'partials/recipe_filter_bar.html' %}
+    </div>
+</div>
+
+<div id="recipe-results" class="pb-4">
+    {% include 'partials/recipe_search_list.html' %}
+</div>
+{% endblock %}

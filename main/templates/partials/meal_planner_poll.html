@@ -1,0 +1,8 @@
+{% comment %}
+Response for the real-time poll: the calendar goes to the normal hx-target
+(#calendar-container), while the workspace/freezer strips ride along as
+out-of-band swaps so all three stay live without resetting the active tab.
+{% endcomment %}
+{% include 'partials/meal_planner_calendar.html' %}
+{% include 'partials/meal_planner_workspace_strip.html' with oob=True %}
+{% include 'partials/meal_planner_freezer_strip.html' with oob=True %}

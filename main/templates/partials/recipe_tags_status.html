@@ -1,0 +1,18 @@
+{% if invalid_tags %}
+<div class="alert alert-danger d-inline-block mt-2" role="alert">
+    <i class="bi bi-exclamation-circle"></i>
+    Invalid Tags:
+    <br>
+    {% for tag in invalid_tags %}
+        <strong>{{ tag }}</strong>
+        <br>
+    {% endfor %}
+    <br>
+    <i>Use label:value format. (e.g., cuisine:asian)</i>
+</div>
+{% elif tag_update %}
+<div class="alert alert-success d-inline-block tag-status-size" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    Tags updated!
+</div>
+{% endif %}

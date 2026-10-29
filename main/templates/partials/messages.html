@@ -1,0 +1,10 @@
+{% comment %}
+Django messages (e.g. "Added jon."), as Bootstrap alerts. Included by pages
+that redirect after a change (user management, recipe add/edit/delete).
+{% endcomment %}
+{% for message in messages %}
+<div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show py-2" role="alert">
+    <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle{% else %}bi-check-circle{% endif %}"></i> {{ message }}
+    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}

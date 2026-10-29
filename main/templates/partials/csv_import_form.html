@@ -1,0 +1,144 @@
+{% comment %}
+The step-two panel: file summary, mapping controls, field checkboxes and
+duplicate handling. Lives in a partial because posting it either swaps in the
+progress bar (on success) or swaps this same panel back with errors on it.
+{% endcomment %}
+        <p class="text-muted">
+            <code>{{ filename }}</code> &mdash; {{ analysis.row_count }} row{{ analysis.row_count|pluralize }},
+            {{ analysis.columns|length }} column{{ analysis.columns|pluralize }}.
+            Nothing has been imported yet.
+        </p>
+
+        {% if errors %}
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+            {% for message in errors %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form hx-post="{% url 'recipe-import-configure' %}"
+              hx-target="#importPanel"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% csrf_token %}
+            <input type="hidden" name="token" value="{{ token }}">
+
+            {% if unknown %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning-subtle">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ unknown|length }} column{{ unknown|length|pluralize:" doesn't,s don't" }} match a recipe field
+                </div>
+                <div class="card-body">
+                    <p>Tell us what {{ unknown|length|pluralize:"this column is,these columns are" }},
+                    or leave {{ unknown|length|pluralize:"it,them" }} as <em>Don't import this column</em>
+                    to skip {{ unknown|length|pluralize:"it,them" }}. Only fields the file doesn't
+                    already have a column for are offered.</p>
+
+                    {% for column in unknown %}
+                    <div class="row align-items-center mb-2">
+                        <div class="col-md-5">
+                            <code>{{ column.header }}</code>
+                            {% if column.sample %}
+                            <div class="form-text mb-0">e.g. {{ column.sample }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-7">
+                            <select class="form-select" name="map_{{ column.index }}">
+                                <option value="">Don't import this column</option>
+                                {% for field in targets %}
+                                <option value="{{ field.key }}"
+                                        {% if field.key == column.chosen %}selected{% endif %}>
+                                    {{ field.label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    Recognised columns
+                    <span class="text-muted">&mdash; untick any you'd rather not import</span>
+                </div>
+                <div class="card-body">
+                    {% if detected %}
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAll">Select all</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="selectNone">Select none</button>
+                    </div>
+                    <div class="row">
+                        {% for header, field in detected %}
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields"
+                                       value="{{ field.key }}" id="field_{{ field.key }}"
+                                       {% if field.key in selected %}checked{% endif %}>
+                                <label class="form-check-label" for="field_{{ field.key }}">
+                                    {{ field.label }}
+                                    {% if header|lower != field.label|lower %}
+                                    <span class="text-muted">&larr; <code>{{ header }}</code></span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-text mt-2">
+                        Unticking <strong>Name</strong> still uses the name column to find matching
+                        recipes &mdash; it just won't rename the ones you already have.
+                    </div>
+                    {% else %}
+                    <p class="mb-0 text-muted">None of this file's columns can be imported.
+                    Map them above to import anything.</p>
+                    {% endif %}
+
+                    {% if match_columns %}
+                    <div class="form-text mt-2">
+                        Used to work out which recipe each row is, but never written to:
+                        {% for header, field in match_columns %}<code>{{ header }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}.
+                    </div>
+                    {% endif %}
+
+                    {% if unusable_columns %}
+                    <div class="form-text mt-1">
+                        Recognised but not importable, so they'll be left out:
+                        {% for header, field in unusable_columns %}<code>{{ header }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">If a recipe is already in the database</div>
+                <div class="card-body">
+                    {% for value, label in duplicate_choices %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="on_duplicate"
+                               value="{{ value }}" id="dup_{{ value }}"
+                               {% if value == on_duplicate %}checked{% endif %}>
+                        <label class="form-check-label" for="dup_{{ value }}">{{ label }}</label>
+                    </div>
+                    {% endfor %}
+                    <div class="form-text mt-2">
+                        A row is treated as an existing recipe when its <code>id</code> or
+                        <code>slug</code> column points at one, or failing that when its name
+                        matches one you already have. On an overwrite, an empty cell clears that
+                        field &mdash; except name, ingredients, and instructions, which are left
+                        as they are.
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-upload"></i> Import {{ analysis.row_count }} row{{ analysis.row_count|pluralize }}
+            </button>
+            <a href="{% url 'recipe-import' %}" class="btn btn-secondary">Choose a different file</a>
+        </form>

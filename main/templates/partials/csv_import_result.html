@@ -1,0 +1,74 @@
+{% comment %}
+Swapped in by the progress poller once the import thread has finished.
+Context comes straight from the cached result payload in run_csv_import().
+{% endcomment %}
+
+{% if fatal %}
+<div class="alert alert-danger">
+    <h5>The import stopped part way through.</h5>
+    <p class="mb-0">{{ fatal }}</p>
+</div>
+{% else %}
+
+{% if total %}
+<div class="alert alert-success">
+    <h5 class="mb-0">
+        <i class="bi bi-check-circle"></i>
+        Added {{ created }} recipe{{ created|pluralize }}{% if updated %},
+        overwrote {{ updated }}{% endif %}.
+    </h5>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <h5 class="mb-0">Nothing was imported.</h5>
+</div>
+{% endif %}
+
+{% if skipped %}
+<div class="alert alert-secondary">
+    <h6>Skipped {{ skipped|length }} row{{ skipped|pluralize }} already in your recipes:</h6>
+    <ul class="mb-0">
+    {% for message in skipped|slice:":20" %}
+        <li>{{ message }}</li>
+    {% endfor %}
+    {% if skipped|length > 20 %}
+        <li class="fst-italic">&hellip; and {{ skipped|length|add:"-20" }} more.</li>
+    {% endif %}
+    </ul>
+    {% if not overwrote %}
+    <p class="mt-2 mb-0">Import again with <em>Overwrite the existing recipe</em>
+    to bring these in.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if errors %}
+<div class="alert alert-danger">
+    <h6>{{ errors|length }} row{{ errors|pluralize }} couldn't be imported:</h6>
+    <ul class="mb-0">
+    {% for error in errors|slice:":20" %}
+        <li>{{ error }}</li>
+    {% endfor %}
+    {% if errors|length > 20 %}
+        <li class="fst-italic">&hellip; and {{ errors|length|add:"-20" }} more.</li>
+    {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+{% if mapped or ignored_columns %}
+<div class="alert alert-info">
+    {% if mapped %}
+    <p class="mb-0">Columns you mapped by hand:
+    {% for header, label in mapped %}<code>{{ header }}</code> &rarr; {{ label }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+    {% endif %}
+    {% if ignored_columns %}
+    <p class="mb-0">Columns left out: {{ ignored_columns|join:", " }}.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endif %}
+
+<a href="{% url 'recipes' %}" class="btn btn-primary">View Recipes</a>
+<a href="{% url 'recipe-import' %}" class="btn btn-secondary">Import More</a>

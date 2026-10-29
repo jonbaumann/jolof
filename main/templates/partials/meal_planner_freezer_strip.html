@@ -1,0 +1,77 @@
+{% comment %}
+Contents of the Freezer tab: the draggable strip of freezer items plus the
+"Add" tile. Wrapped in #freezer-strip so freezer add/remove can swap just this
+region (keeping the Freezer tab active). `oob` refreshes it out-of-band.
+{% endcomment %}
+<div id="freezer-strip"{% if oob %} hx-swap-oob="true"{% endif %}>
+{% if freezer_items %}
+<div class="planner-workspace-strip">
+  {% for item in freezer_items %}
+  {% if item.recipe %}
+  <div class="workspace-item" draggable="{% if can.mealplan_read_write %}true{% else %}false{% endif %}"
+       data-recipe-id="{{ item.recipe.id }}"
+       data-source="freezer" data-freezer-id="{{ item.id }}" data-name="{{ item.recipe.name }}">
+    {% if item.recipe.image %}
+    <img src="{{ item.recipe.image.url }}" class="workspace-item-thumb rounded-1" alt="">
+    {% else %}
+    <div class="workspace-item-thumb rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle">
+      <i class="bi bi-book text-secondary" style="font-size: 0.7rem;"></i>
+    </div>
+    {% endif %}
+    <span class="workspace-item-name">{{ item.recipe.name }}</span>
+    {% include 'partials/meal_planner_recipe_hovercard.html' with recipe=item.recipe %}
+    {% if can.mealplan_read_write %}
+    <button type="button" class="btn-close workspace-item-remove"
+            title="Remove from freezer"
+            hx-post="{% url 'freezer-remove-item' item.id %}"
+            hx-target="#freezer-strip"
+            hx-swap="outerHTML"></button>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="workspace-item" draggable="{% if can.mealplan_read_write %}true{% else %}false{% endif %}"
+       data-custom-text="{{ item.custom_text }}"
+       data-source="freezer" data-freezer-id="{{ item.id }}" data-name="{{ item.custom_text }}">
+    <div class="workspace-item-thumb rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle">
+      <i class="bi bi-snow text-info" style="font-size: 0.7rem;"></i>
+    </div>
+    <span class="workspace-item-name">{{ item.custom_text }}</span>
+    {% if can.mealplan_read_write %}
+    <button type="button" class="btn-close workspace-item-remove"
+            title="Remove from freezer"
+            hx-post="{% url 'freezer-remove-item' item.id %}"
+            hx-target="#freezer-strip"
+            hx-swap="outerHTML"></button>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% if can.mealplan_read_write %}
+  <button type="button" class="workspace-add-tile"
+          data-bs-toggle="modal"
+          data-bs-target="#recipePicker"
+          hx-get="{% url 'meal-planner-recipe-picker' %}?mode=freezer"
+          hx-target="#recipe-picker-modal-body"
+          hx-trigger="click">
+    <i class="bi bi-plus-lg"></i> Add
+  </button>
+  {% endif %}
+</div>
+{% else %}
+<div class="text-center py-2">
+  <p class="text-muted small mb-2">
+    Your freezer is empty. Add recipes or your own items (like &ldquo;corn&rdquo; or &ldquo;ground beef&rdquo;) to keep track of what you have on hand.
+  </p>
+  {% if can.mealplan_read_write %}
+  <button type="button" class="workspace-add-tile"
+          data-bs-toggle="modal"
+          data-bs-target="#recipePicker"
+          hx-get="{% url 'meal-planner-recipe-picker' %}?mode=freezer"
+          hx-target="#recipe-picker-modal-body"
+          hx-trigger="click">
+    <i class="bi bi-plus-lg"></i> Add
+  </button>
+  {% endif %}
+</div>
+{% endif %}
+</div>

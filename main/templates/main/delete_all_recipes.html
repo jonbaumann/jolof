@@ -1,0 +1,24 @@
+{% extends 'main/base.html' %} 
+{% block title %}Misc Tools{% endblock %}
+{% block content %}
+<h3>Delete Recipes</h3>
+<div class="alert alert-danger">
+    <p>
+    WARNING: This will remove ALL recipes from the database.  
+    </p>
+    <p>
+    Total Recipes: <strong>{{ recipe_count }}</strong>
+    </p>
+    <p>
+    Are you sure you want to continue?
+    </p>
+</div>    
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">
+        <i class="bi bi-trash"></i> Delete ALL Recipes
+    </button>
+    <a href="{% url 'recipes' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

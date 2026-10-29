@@ -1,0 +1,20 @@
+{% comment %}
+One effort/complexity/health score as a colored numbered circle, matching the
+recipe detail page. Expects:
+  value     – 1–5 or None
+  good_high – True when a higher number is better (health); omit/False otherwise
+              (effort, complexity), where higher is worse.
+{% endcomment %}
+{% if value %}
+  {% if good_high %}
+    {% if value >= 4 %}<i class="bi bi-{{ value }}-circle-fill" style="color: green;"></i>
+    {% elif value >= 2 %}<i class="bi bi-{{ value }}-circle-fill" style="color: orange;"></i>
+    {% else %}<i class="bi bi-{{ value }}-circle-fill" style="color: red;"></i>{% endif %}
+  {% else %}
+    {% if value <= 2 %}<i class="bi bi-{{ value }}-circle-fill" style="color: green;"></i>
+    {% elif value <= 4 %}<i class="bi bi-{{ value }}-circle-fill" style="color: orange;"></i>
+    {% else %}<i class="bi bi-{{ value }}-circle-fill" style="color: red;"></i>{% endif %}
+  {% endif %}
+{% else %}
+  <span class="text-muted">--</span>
+{% endif %}

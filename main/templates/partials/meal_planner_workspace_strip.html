@@ -1,0 +1,75 @@
+{% comment %}
+Contents of the Workspace tab: the draggable strip of staged cards plus the
+"Add" tile. Rendered inside the tabbed panel in meal_planner_workspace.html.
+Wrapped in #workspace-strip so it can be refreshed out-of-band (e.g. by the
+real-time poll) without touching the tab nav / active-tab state.
+{% endcomment %}
+<div id="workspace-strip"{% if oob %} hx-swap-oob="true"{% endif %}>
+{% if workspace_items %}
+<div class="planner-workspace-strip">
+  {% for item in workspace_items %}
+  {% if item.recipe %}
+  <div class="workspace-item" draggable="{% if can.mealplan_read_write %}true{% else %}false{% endif %}" data-recipe-id="{{ item.recipe.id }}">
+    {% if item.recipe.image %}
+    <img src="{{ item.recipe.image.url }}" class="workspace-item-thumb rounded-1" alt="">
+    {% else %}
+    <div class="workspace-item-thumb rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle">
+      <i class="bi bi-book text-secondary" style="font-size: 0.7rem;"></i>
+    </div>
+    {% endif %}
+    <span class="workspace-item-name">{{ item.recipe.name }}</span>
+    {% include 'partials/meal_planner_recipe_hovercard.html' with recipe=item.recipe %}
+    {% if can.mealplan_read_write %}
+    <button type="button" class="btn-close workspace-item-remove"
+            title="Remove from workspace"
+            hx-post="{% url 'workspace-remove' item.recipe.id %}"
+            hx-vals='{"source": "workspace"}'
+            hx-target="#workspace-container"
+            hx-swap="outerHTML"></button>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="workspace-item" draggable="{% if can.mealplan_read_write %}true{% else %}false{% endif %}" data-custom-text="{{ item.custom_text }}">
+    <div class="workspace-item-thumb rounded-1 d-flex align-items-center justify-content-center bg-secondary-subtle">
+      <i class="bi bi-card-text text-secondary" style="font-size: 0.7rem;"></i>
+    </div>
+    <span class="workspace-item-name">{{ item.custom_text }}</span>
+    {% if can.mealplan_read_write %}
+    <button type="button" class="btn-close workspace-item-remove"
+            title="Remove from workspace"
+            hx-post="{% url 'workspace-remove-item' item.id %}"
+            hx-target="#workspace-container"
+            hx-swap="outerHTML"></button>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% if can.mealplan_read_write %}
+  <button type="button" class="workspace-add-tile"
+          data-bs-toggle="modal"
+          data-bs-target="#recipePicker"
+          hx-get="{% url 'meal-planner-recipe-picker' %}?mode=workspace"
+          hx-target="#recipe-picker-modal-body"
+          hx-trigger="click">
+    <i class="bi bi-plus-lg"></i> Add
+  </button>
+  {% endif %}
+</div>
+{% else %}
+<div class="text-center py-2">
+  <p class="text-muted small mb-2">
+    Nothing staged yet. Add recipes from an individual recipe's page or here, or add your own custom card.
+  </p>
+  {% if can.mealplan_read_write %}
+  <button type="button" class="workspace-add-tile"
+          data-bs-toggle="modal"
+          data-bs-target="#recipePicker"
+          hx-get="{% url 'meal-planner-recipe-picker' %}?mode=workspace"
+          hx-target="#recipe-picker-modal-body"
+          hx-trigger="click">
+    <i class="bi bi-plus-lg"></i> Add
+  </button>
+  {% endif %}
+</div>
+{% endif %}
+</div>

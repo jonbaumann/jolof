@@ -1,0 +1,140 @@
+<input type="hidden" name="tag_sort" id="tag_sort" value="{{ tag_sort }}">
+
+{% if error %}
+    <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle"></i> {{ error }}</div>
+{% endif %}
+{% if message %}
+    <div class="alert alert-success py-2"><i class="bi bi-check-circle"></i> {{ message }}</div>
+{% endif %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <div class="text-secondary">
+        {% if tag_search %}
+            {{ tags|length }} of {{ tag_total }} tag{{ tag_total|pluralize }} matching "{{ tag_search }}"
+        {% else %}
+            {{ tag_total }} tag{{ tag_total|pluralize }}
+        {% endif %}
+        {% if unused_count %}
+            &middot; {{ unused_count }} unused
+        {% endif %}
+    </div>
+    {% if unused_count %}
+    <button class="btn btn-sm btn-outline-danger"
+            hx-post="{% url 'tag-remove-unused' %}"
+            hx-include="#tag_search, #tag_sort"
+            hx-target="#tag-manage-body"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            hx-confirm="Remove {{ unused_count }} unused tag{{ unused_count|pluralize }}? {% if unused_count == 1 %}It isn't{% else %}They aren't{% endif %} assigned to any recipe.{% if tag_search %} This covers your whole collection, not just the current search.{% endif %} This can't be undone."
+            title="Delete every tag that isn't assigned to a recipe">
+        <i class="bi bi-trash"></i> Remove {{ unused_count }} unused
+    </button>
+    {% endif %}
+</div>
+
+{% if tags %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col" class="sortable" style="cursor: pointer"
+                    hx-get="{% url 'tag-manage-list' %}?tag_sort={% if tag_sort == 'label-asc' %}label-desc{% else %}label-asc{% endif %}"
+                    hx-include="#tag_search"
+                    hx-target="#tag-manage-body"
+                    title="Sort by label">
+                    Label {% if tag_sort == 'label-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% elif tag_sort == 'label-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                </th>
+                <th scope="col" class="sortable" style="cursor: pointer"
+                    hx-get="{% url 'tag-manage-list' %}?tag_sort={% if tag_sort == 'value-asc' %}value-desc{% else %}value-asc{% endif %}"
+                    hx-include="#tag_search"
+                    hx-target="#tag-manage-body"
+                    title="Sort by value">
+                    Value {% if tag_sort == 'value-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% elif tag_sort == 'value-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                </th>
+                <th scope="col" class="text-center sortable" style="cursor: pointer"
+                    hx-get="{% url 'tag-manage-list' %}?tag_sort={% if tag_sort == 'count-desc' %}count-asc{% else %}count-desc{% endif %}"
+                    hx-include="#tag_search"
+                    hx-target="#tag-manage-body"
+                    title="Sort by number of recipes">
+                    Recipes {% if tag_sort == 'count-desc' %}<i class="bi bi-caret-down-fill small text-primary"></i>{% elif tag_sort == 'count-asc' %}<i class="bi bi-caret-up-fill small text-primary"></i>{% else %}<i class="bi bi-arrow-down-up small text-muted opacity-50"></i>{% endif %}
+                </th>
+                <th scope="col" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for tag in tags %}
+            {% if tag.pk == editing_pk %}
+            <tr>
+                <td>
+                    <input type="text" name="label" class="form-control form-control-sm" value="{{ tag.label }}"
+                           maxlength="100" autocomplete="off" autofocus
+                           onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.closest('tr').querySelector('.tag-save').click(); }">
+                </td>
+                <td>
+                    <input type="text" name="value" class="form-control form-control-sm" value="{{ tag.value }}"
+                           maxlength="100" autocomplete="off"
+                           onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.closest('tr').querySelector('.tag-save').click(); }">
+                </td>
+                <td class="text-center text-secondary">{{ tag.recipe_count }}</td>
+                <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-primary tag-save"
+                            hx-post="{% url 'tag-edit' tag.pk %}"
+                            hx-include="closest tr, #tag_search, #tag_sort"
+                            hx-target="#tag-manage-body"
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                        <i class="bi bi-check-lg"></i> Save
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            hx-get="{% url 'tag-manage-list' %}"
+                            hx-include="#tag_search, #tag_sort"
+                            hx-target="#tag-manage-body">
+                        Cancel
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td><span class="badge bg-recipe-tag">{{ tag.label }}</span></td>
+                <td>{{ tag.value }}</td>
+                <td class="text-center">
+                    {% if tag.recipe_count %}
+                        <a href="{{ tag.get_recipe_search_url }}" target="_blank" rel="noopener"
+                           title="Show the {{ tag.recipe_count }} recipe{{ tag.recipe_count|pluralize }} tagged {{ tag }} (opens in a new tab)">
+                            {{ tag.recipe_count }}
+                        </a>
+                    {% else %}
+                        <span class="text-secondary">0</span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-outline-secondary"
+                            hx-get="{% url 'tag-manage-list' %}?editing={{ tag.pk }}"
+                            hx-include="#tag_search, #tag_sort"
+                            hx-target="#tag-manage-body"
+                            title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            hx-post="{% url 'tag-delete' tag.pk %}"
+                            hx-include="#tag_search, #tag_sort"
+                            hx-target="#tag-manage-body"
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                            hx-confirm="Delete &quot;{{ tag }}&quot;?{% if tag.recipe_count %} It will be removed from {{ tag.recipe_count }} recipe{{ tag.recipe_count|pluralize }}.{% endif %}"
+                            title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <div class="alert alert-secondary">
+        {% if tag_search %}
+            No tags match "{{ tag_search }}".
+        {% else %}
+            No tags yet. Add one above, or tag a recipe from its detail page.
+        {% endif %}
+    </div>
+{% endif %}

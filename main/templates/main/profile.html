@@ -1,0 +1,57 @@
+{% extends 'main/base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<h3 class="mb-4 mx-auto" style="max-width: 640px;">My Profile</h3>
+<div class="card mx-auto" style="max-width: 640px;">
+  <div class="card-body p-4 p-lg-5">
+    <div class="row mb-4">
+      <div class="col-4 col-sm-3 text-muted">Username</div>
+      <div class="col-8 col-sm-9">{{ user.username }}</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-4 col-sm-3 text-muted">First Name</div>
+      <div class="col-8 col-sm-9">{{ user.first_name|default:"—" }}</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-4 col-sm-3 text-muted">Last Name</div>
+      <div class="col-8 col-sm-9">{{ user.last_name|default:"—" }}</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-4 col-sm-3 text-muted">Email</div>
+      <div class="col-8 col-sm-9">{{ user.email|default:"—" }}</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-4 col-sm-3 text-muted">Role</div>
+      <div class="col-8 col-sm-9">{{ profile_role|default:"None" }}</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-4 col-sm-3 text-muted">Household</div>
+      <div class="col-8 col-sm-9">{{ profile_household|default:"None" }}</div>
+    </div>
+    <div class="row mb-5">
+      <div class="col-4 col-sm-3 text-muted">Member Since</div>
+      <div class="col-8 col-sm-9">{{ user.date_joined|date:"F j, Y" }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'profile-edit' %}" class="btn btn-primary">Edit Profile</a>
+      <a href="{% url 'password-change' %}" class="btn btn-outline-secondary">Change Password</a>
+      <a href="{% url 'preferences' %}" class="btn btn-outline-secondary">Preferences</a>
+    </div>
+  </div>
+</div>
+{% if has_api_access or api_sessions %}
+<div class="card mx-auto mt-4" style="max-width: 640px;">
+  <div class="card-body p-4">
+    <h5 class="card-title">API sessions</h5>
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+      <p class="text-secondary small mb-0" style="max-width: 26rem;">Sessions started when an app or agent logged in to the Jolof API as you.
+        Revoke one to make it log in again.</p>
+      {% if has_api_access %}
+      <a href="{% url 'api-reference' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-book"></i> API Reference</a>
+      {% endif %}
+    </div>
+    {% include 'partials/api_sessions.html' %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

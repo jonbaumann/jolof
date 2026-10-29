@@ -1,0 +1,28 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block title %}Find Duplicates{% endblock %}
+{% block content %}
+<h3>Find Duplicate Recipes</h3>
+<p class="text-secondary">
+    Scan your recipes for identical or very similar names, then review each pair below
+    and optionally delete one of them.
+</p>
+
+<form hx-post="{% url 'find-duplicates-start' %}"
+      hx-target="#duplicate-results"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="mb-3" style="max-width: 320px;">
+        <label for="threshold" class="form-label">Match threshold: <span id="threshold-value">90</span>%</label>
+        <input type="range" class="form-range" id="threshold" name="threshold" min="50" max="100" value="90"
+               oninput="document.getElementById('threshold-value').textContent = this.value">
+        <div class="form-text">Higher values require recipe names to be more similar.</div>
+    </div>
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-search"></i> Find Duplicates
+    </button>
+    <a href="{% url 'misc-tools' %}" class="btn btn-secondary">Cancel</a>
+</form>
+
+<div id="duplicate-results" class="mt-4"></div>
+{% endblock %}

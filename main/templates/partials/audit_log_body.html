@@ -1,0 +1,136 @@
+{% comment %}
+The audit log table on its own, so htmx can swap it as filters, paging, or the
+page-size selector change. Every control here re-sends the whole filter set.
+{% endcomment %}
+<p class="text-secondary small mb-2">
+    {{ total_count }} entr{{ total_count|pluralize:"y,ies" }}
+    {% if retention_days %}
+        · kept for {{ retention_days }} day{{ retention_days|pluralize }}
+    {% else %}
+        · kept forever
+    {% endif %}
+</p>
+
+{% if entries %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+        {% comment %}
+        The first three columns take exactly the width of their content
+        (width: 1% plus nowrap) and pad to the right, leaving What and Fields
+        changed to share whatever is left.
+        {% endcomment %}
+        <thead>
+            <tr>
+                <th scope="col" class="pe-4" style="width: 1%; white-space: nowrap;">When</th>
+                <th scope="col" class="pe-4" style="width: 1%; white-space: nowrap;">Who</th>
+                <th scope="col" class="pe-4" style="width: 1%; white-space: nowrap;">Action</th>
+                <th scope="col" class="pe-4">What</th>
+                <th scope="col">Fields changed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td class="text-secondary small pe-4" style="white-space: nowrap;"
+                    title="{{ entry.timestamp|date:'Y-m-d H:i:s e' }}">
+                    {{ entry.timestamp|date:"M j, Y H:i" }}
+                </td>
+                <td class="pe-4" style="white-space: nowrap;">{{ entry.actor_display }}</td>
+                <td class="pe-4">
+                    {% if entry.action == 'created' %}
+                        <span class="badge bg-success">Created</span>
+                    {% elif entry.action == 'deleted' %}
+                        <span class="badge bg-danger">Deleted</span>
+                    {% else %}
+                        <span class="badge bg-primary">Updated</span>
+                    {% endif %}
+                </td>
+                <td class="pe-4">
+                    <span class="text-secondary small d-block">{{ entry.object_type }}</span>
+                    {% if entry.object_url and entry.action != 'deleted' %}
+                        <a href="{{ entry.object_url }}">{{ entry.object_label }}</a>
+                    {% else %}
+                        {{ entry.object_label }}
+                    {% endif %}
+                </td>
+                <td class="small">
+                    {% for label in entry.changed_fields %}
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ label }}</span>
+                    {% empty %}
+                        <span class="text-secondary">—</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<div class="alert alert-secondary">
+    {% if filters.search or filters.object_type or filters.action or filters.actor %}
+        No entries match those filters.
+    {% else %}
+        Nothing has been recorded yet.
+    {% endif %}
+</div>
+{% endif %}
+
+{% comment %}
+Pagination and the page-size selector, laid out as everywhere else in the app:
+pages centred, "Results:" pinned right from md up. The selector sits inside the
+swapped region, so the controls outside it name #audit_per_page in hx-include to
+keep the choice across a filter change.
+{% endcomment %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="Page navigation pb-3">
+            <div class="position-relative d-flex flex-column flex-md-row align-items-center justify-content-md-center">
+
+                <ul class="pagination justify-content-center mb-2 mb-md-0">
+                    {% if entries.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" style="cursor: pointer"
+                           hx-get="{% url 'audit-log-list' %}?page={{ entries.previous_page_number }}"
+                           hx-include="#audit_search, #audit-filters, #audit_per_page"
+                           hx-target="#audit-log-body">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ entries.number }} of {{ entries.paginator.num_pages }}</span>
+                    </li>
+
+                    {% if entries.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" style="cursor: pointer"
+                           hx-get="{% url 'audit-log-list' %}?page={{ entries.next_page_number }}"
+                           hx-include="#audit_search, #audit-filters, #audit_per_page"
+                           hx-target="#audit-log-body">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- results per page selector -->
+                <div class="d-flex align-items-center gap-2 me-3 align-self-start align-self-md-auto position-md-absolute end-0">
+                    <span>Results:</span>
+                    <select
+                        class="form-select form-select-sm"
+                        aria-label="Results per page"
+                        id="audit_per_page"
+                        name="per_page"
+                        hx-get="{% url 'audit-log-list' %}"
+                        hx-trigger="change"
+                        hx-include="#audit_search, #audit-filters"
+                        hx-target="#audit-log-body"
+                    >
+                        {% for choice in per_page_choices %}
+                            <option value="{{ choice }}" {% if choice == per_page %}selected{% endif %}>{{ choice }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+        </nav>
+    </div>
+</div>

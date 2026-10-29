@@ -1,0 +1,259 @@
+{% extends 'main/base.html' %} 
+{% load static %}
+{% block title %}{{ name }}{% endblock %}
+{% block content %}
+{% include 'partials/messages.html' %}
+    <div class="container">
+    <div class="col p-2">
+        <h2 class="mb8 d-flex align-items-center gap-2">
+            {{ name }}
+            {% if user.is_authenticated %}
+                {% if is_favorite %}
+                    {% include 'partials/favorite_button.html' with recipe_id=id is_favorite=True variant='plain' icon_class='fs-4' %}
+                {% else %}
+                    {% include 'partials/favorite_button.html' with recipe_id=id is_favorite=False variant='plain' icon_class='fs-4' %}
+                {% endif %}
+            {% endif %}
+        </h2>
+        {% for each in range %}
+            {% if each < rating %}
+                <i class="bi bi-star-fill" style="color: #ffc107"></i> 
+            {% else %}
+                <i class="bi bi-star" style="color: #8c8c8c"></i>
+            {% endif %}
+        {% endfor %}
+        <hr>
+    </div>
+    <div class="row">
+        <div class="col-sm-12 col-md-8 col-lg-6 pb-2">
+            {% if can.recipe_read_write %}
+            <div id="tag-container pb-3">
+                <label for="tag-field"><h5>Tags</h5></label>
+                <input 
+                type="text"
+                class="form-control"
+                value="{% for tag in tags %}{{ tag }},{% endfor %}"
+                id="tag-field"
+                data-ub-tag-variant="recipe-tag"
+                name="tags"
+                hx-post="{% url 'update-tags' id %}"
+                hx-trigger="tagchange"
+                hx-target="#tag-status-update"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' />
+            </div>
+
+            <script>
+                const tagField = document.getElementById('tag-field');
+                const ubTag = UseBootstrapTag(tagField);
+                attachTagAutocomplete(tagField, ubTag, "{% url 'tags-suggest' %}");
+
+                // Find whatever wrapper the library created around input
+                const tagWrapper = tagField.parentElement;
+
+                tagWrapper.addEventListener('focusout', function(e) {
+                    // Only fire when focus leaves the entire widget
+                    if (!tagWrapper.contains(e.relatedTarget)) {
+                        htmx.trigger(tagField, 'tagchange');
+                    }
+                });
+            </script>
+
+            <div id="tag-status-update">
+                {% include 'partials/recipe_tags_status.html' %}
+            </div>
+            {% else %}
+            <h5>Tags</h5>
+            <div class="d-flex flex-wrap gap-1">
+                {% for tag in tags %}
+                <a href="{{ tag.get_recipe_search_url }}" class="badge badge-tag text-decoration-none">{{ tag }}</a>
+                {% empty %}
+                <span class="text-muted">None</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 col pb-4">
+            <div class="row pb-3">
+                <div class="col">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <td>Effort </td>
+                                <td>
+                                    {% if effort == 1 %}
+                                        <i class="bi bi-1-circle-fill h4" style="color: green;"></i>
+                                    {% elif effort == 2 %}
+                                        <i class="bi bi-2-circle-fill h4" style="color: green;"></i>
+                                    {% elif effort == 3 %}
+                                        <i class="bi bi-3-circle-fill h4" style="color: orange;"></i>
+                                    {% elif effort == 4 %}
+                                        <i class="bi bi-4-circle-fill h4" style="color: orange;"></i>
+                                    {% elif effort == 5 %}
+                                        <i class="bi bi-5-circle-fill h4" style="color: red;"></i>
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Complexity </td>
+                                <td>
+                                    {% if complexity == 1 %}
+                                        <i class="bi bi-1-circle-fill h4" style="color: green;"></i>
+                                    {% elif complexity == 2 %}
+                                        <i class="bi bi-2-circle-fill h4" style="color: green;"></i>
+                                    {% elif complexity == 3 %}
+                                        <i class="bi bi-3-circle-fill h4" style="color: orange;"></i>
+                                    {% elif complexity == 4 %}
+                                        <i class="bi bi-4-circle-fill h4" style="color: orange;"></i>
+                                    {% elif complexity == 5 %}
+                                        <i class="bi bi-5-circle-fill h4" style="color: red;"></i>
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Healthiness </td>
+                                <td>
+                                    {% if health == 1 %}
+                                        <i class="bi bi-1-circle-fill h4" style="color: red;"></i>
+                                    {% elif health == 2 %}
+                                        <i class="bi bi-2-circle-fill h4" style="color: orange;"></i>
+                                    {% elif health == 3 %}
+                                        <i class="bi bi-3-circle-fill h4" style="color: orange;"></i>
+                                    {% elif health == 4 %}
+                                        <i class="bi bi-4-circle-fill h4" style="color: green;"></i>
+                                    {% elif health == 5 %}
+                                        <i class="bi bi-5-circle-fill h4" style="color: green;"></i>
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <td class="ps-4 border-start">GF</td>
+                                <td class="p-2">
+                                    {% include 'partials/dietary_flag.html' with value=gluten_free %}
+                                </td>
+                                <td class="p-2"></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 border-start">DF</td>
+                                <td class="p-2">
+                                    {% include 'partials/dietary_flag.html' with value=dairy_free %}
+                                </td>
+                                <td class="p-2"></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 border-start">Vegetarian</td>
+                                <td class="p-2">
+                                    {% include 'partials/dietary_flag.html' with value=vegetarian %}
+                                </td>
+                                <td class="p-2"></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 border-start">Vegan</td>
+                                <td class="p-2">
+                                    {% include 'partials/dietary_flag.html' with value=vegan %}
+                                </td>
+                                <td class="p-2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div lass="col">
+                    <h4 class="mb8">Description:</h4> {{ description|linebreaks }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <a href="{{ url }}" target="blank" class="text-break">{{ url }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col col-md-6 style">
+            {% if image %}
+                <img src="{{ image.url }}" width="300px">
+            {% else %}
+                <img src="{% static '/fork_knife.svg' %}" width="300px">
+            {% endif %}
+        </div>
+    </div>
+    <div class="row p-2">
+        <div class="col-6">
+        </div>
+        <div class="col-6">
+        </div>
+    </div>
+        <div class="row">
+            <div class="col pt-3">
+                <h3 class="mb8">Ingredients:</h3> {{ ingredients|linebreaks }} 
+                <br>
+                <h3 class="mb8">Instructions:</h3> {{ instructions|linebreaks }}
+                <br>
+                <h3 class="mb8">Notes:</h3> {{ notes|linebreaks }}
+                <br><br>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="d-flex align-items-center">
+                    <span>
+                        <a href="{% url 'recipes' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Recipes
+                        </a>
+                    </span>
+                    {% if can.recipe_read_write %}
+                    <div class="vr mx-2"></div>
+                    <span>
+                        <a href="/recipe-update/{{id}}/" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                    </span>
+                    <div class="vr mx-2"></div>
+                    <span>
+                        <a href="/recipe-delete/{{id}}/" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Delete
+                        </a>
+                    </span>
+                    {% endif %}
+                    {% if can.mealplan_read_write %}
+                    <div class="vr mx-2"></div>
+                    {% include 'partials/workspace_button.html' with recipe_id=id in_workspace=in_workspace %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                {% if can.recipe_read_write %}
+                <hr>
+                {% include 'partials/recipe_public_share.html' %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="container pb-5">
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

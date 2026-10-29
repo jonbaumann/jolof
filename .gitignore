@@ -1,0 +1,29 @@
+# Django media files
+media/
+*/media/
+
+# Local environment: never commit real values. See .env.example for the
+# variables the app needs.
+.env
+db.sqlite3
+*.py.old
+
+# Editor / tooling config, specific to one machine
+.idea/
+.DS_Store
+*/.DS_Store
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+scratch.txt
+# Deployment: server-specific files stay out (compose files with DB passwords,
+# nginx conf with IP allowlists, DB dumps, old env-specific scripts). The
+# generic deploy tooling below is tracked.
+deployment/*
+!deployment/deploy_jolof.sh
+!deployment/install_deploy.sh
+!deployment/deploy.conf.example
+!deployment/DEPLOY.md
+.claude/
+.claude

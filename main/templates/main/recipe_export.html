@@ -1,0 +1,68 @@
+{% extends 'main/base.html' %}
+{% block title %}Export Recipes to CSV{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h3 class="mb-4">Export Recipes to CSV</h3>
+
+        <div class="alert alert-info">
+            Downloads all <strong>{{ recipe_count }}</strong> recipes as a CSV file, one row per recipe,
+            with a column for each field you tick below.
+            <p class="mt-2 mb-0">Tags export as <code>label:value</code> pairs in a single column
+            &mdash; the same format the tags box on a recipe accepts.</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" id="exportForm">
+            {% csrf_token %}
+
+            <div class="d-flex gap-2 mb-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAll">Select all</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="selectNone">Select none</button>
+            </div>
+
+            {% for group_name, fields in field_groups %}
+            <div class="card mb-3">
+                <div class="card-header">{{ group_name }}</div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for field in fields %}
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields"
+                                       value="{{ field.key }}" id="field_{{ field.key }}"
+                                       {% if field.key in selected %}checked{% endif %}>
+                                <label class="form-check-label" for="field_{{ field.key }}">
+                                    {{ field.label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-download"></i> Export Recipes
+            </button>
+            <a href="{% url 'recipes' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script>
+  (function () {
+    const setAll = (checked) => {
+      document.querySelectorAll('#exportForm input[name="fields"]')
+        .forEach(box => { box.checked = checked; });
+    };
+    document.getElementById('selectAll').addEventListener('click', () => setAll(true));
+    document.getElementById('selectNone').addEventListener('click', () => setAll(false));
+  })();
+</script>
+{% endblock %}

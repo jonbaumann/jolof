@@ -1,0 +1,25 @@
+<span id="workspace-btn-list-{{ recipe_id }}">
+  {% if in_workspace %}
+  <button class="btn btn-sm btn-success"
+          aria-label="In Meal Planner — click to remove"
+          data-bs-toggle="tooltip" data-bs-placement="top" title="In Meal Planner — click to remove"
+          hx-post="{% url 'workspace-remove' recipe_id %}"
+          hx-vals='{"source": "list"}'
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          hx-target="#workspace-btn-list-{{ recipe_id }}"
+          hx-swap="outerHTML">
+    <i class="bi bi-calendar-check-fill"></i>
+  </button>
+  {% else %}
+  <button class="btn btn-sm btn-outline-primary"
+          aria-label="Add to Meal Planner"
+          data-bs-toggle="tooltip" data-bs-placement="top" title="Add to Meal Planner"
+          hx-post="{% url 'workspace-add' recipe_id %}"
+          hx-vals='{"source": "list"}'
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+          hx-target="#workspace-btn-list-{{ recipe_id }}"
+          hx-swap="outerHTML">
+    <i class="bi bi-calendar-plus"></i>
+  </button>
+  {% endif %}
+</span>

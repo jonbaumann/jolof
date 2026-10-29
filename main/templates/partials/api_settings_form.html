@@ -1,0 +1,30 @@
+{% comment %}
+The API idle timeout. Swapped in place after saving.
+{% endcomment %}
+<form class="row g-2 align-items-end"
+      hx-post="{% url 'api-settings' %}"
+      hx-target="#api-settings"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <div class="col-auto">
+        <label for="{{ api_settings_form.idle_timeout_minutes.id_for_label }}" class="form-label mb-1 text-secondary small">
+            Idle timeout (minutes)
+        </label>
+        {{ api_settings_form.idle_timeout_minutes }}
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+    <div class="col-12">
+        <div class="form-text">
+            A session token works for as long as it keeps being used, and stops once it's gone unused
+            for the idle timeout. Use <strong>0</strong> to turn the timeout off.
+            Changes apply to sessions already started.
+        </div>
+        {% for field in api_settings_form %}{% for error in field.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}{% endfor %}
+        {% if api_settings_saved %}
+            <div class="text-success small">Saved.</div>
+        {% endif %}
+    </div>
+</form>

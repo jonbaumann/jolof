@@ -1,0 +1,37 @@
+{% extends 'main/base.html' %}
+{% block title %}Import Recipes from CSV{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h3 class="mb-4">Import Recipes from CSV</h3>
+
+        <div class="alert alert-info">
+            Choose a CSV file with one row per recipe and a header row naming the columns.
+            <p class="mt-2 mb-0">You'll see what was found in it before anything is imported
+            &mdash; including any columns that don't match a recipe field, which you can then
+            map by hand. Anything the CSV Export tool produces is recognised as-is.</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="card mb-4">
+                <div class="card-header">CSV file</div>
+                <div class="card-body">
+                    {{ form.csv_file }}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Read the file
+            </button>
+            <a href="{% url 'recipes' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

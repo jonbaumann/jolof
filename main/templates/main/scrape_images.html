@@ -1,0 +1,30 @@
+{% extends 'main/base.html' %} 
+{% block title %}Misc Tools{% endblock %}
+{% block content %}
+<h3>Scrape Images</h3>
+
+<div class="alert alert-info">
+    <p>
+    This tool will check all recipes in the database that have a URL defined and no image, and will attempt to scrape an image from the recipe website defined in the URL. 
+    </p>
+    <p>
+    Assuming the scrape is successful, the image will be saved to the recipe.
+    </p>
+</div>      
+
+<form hx-post="{% url 'process-image-scrape' %}"
+          hx-target="#result-area"
+          hx-swap="innerHTML">
+    {% csrf_token %}
+    
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-cloud-download"></i> Scrape Images
+    </button>
+    <a href="{% url 'recipes' %}" class="btn btn-secondary">Cancel</a>
+</form>
+<br>
+<br>
+<!-- Progress section -->
+<div id="result-area" class="mt-4"></div>
+
+{% endblock %}

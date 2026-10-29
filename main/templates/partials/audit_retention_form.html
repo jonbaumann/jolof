@@ -1,0 +1,35 @@
+{% comment %}
+The retention setting. Swapped in place after saving so the confirmation and
+any pruning count land without a page reload.
+{% endcomment %}
+<form class="row g-2 align-items-end"
+      hx-post="{% url 'audit-retention' %}"
+      hx-target="#audit-retention"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <div class="col-auto">
+        <label for="{{ retention_form.retention_days.id_for_label }}" class="form-label mb-1 text-secondary small">
+            Keep history for (days)
+        </label>
+        {{ retention_form.retention_days }}
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+    <div class="col-12">
+        <div class="form-text">
+            Entries older than this are deleted permanently. Use <strong>0</strong> to keep everything forever.
+            The default is 365 days.
+        </div>
+        {% for error in retention_form.retention_days.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+        {% if retention_saved %}
+            <div class="text-success small">
+                Saved.
+                {% if retention_removed %}
+                    Removed {{ retention_removed }} entr{{ retention_removed|pluralize:"y,ies" }} past the new limit.
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</form>

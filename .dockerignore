@@ -1,0 +1,18 @@
+# Keep secrets, local data and tooling out of the image.
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.idea
+.claude
+.DS_Store
+**/.DS_Store
+**/__pycache__
+*.py[cod]
+db.sqlite3
+media/
+scratch.txt
+deployment/
+Dockerfile
+docker-compose.yml

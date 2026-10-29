@@ -1,0 +1,35 @@
+{% comment %}
+"Make Public" toggle + share link, shown at the bottom of the recipe detail
+page. Swapped in place (outerHTML) after each toggle so the link appears/
+disappears without a full page reload.
+{% endcomment %}
+<div id="public-share-{{ id }}" class="mt-3">
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" role="switch" id="makePublicSwitch-{{ id }}"
+           {% if is_public %}checked{% endif %}
+           hx-post="{% url 'recipe-make-public' id %}"
+           hx-target="#public-share-{{ id }}"
+           hx-swap="outerHTML"
+           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <label class="form-check-label" for="makePublicSwitch-{{ id }}">Make Public</label>
+  </div>
+  {% if is_public %}
+  <div class="input-group input-group-sm mt-2" style="max-width: 480px;">
+    <input type="text" class="form-control" value="{{ public_url }}" readonly id="publicUrlInput-{{ id }}">
+    <button class="btn btn-outline-secondary" type="button"
+            onclick="navigator.clipboard.writeText(document.getElementById('publicUrlInput-{{ id }}').value); this.innerHTML = '<i class=\'bi bi-check\'></i> Copied';">
+      <i class="bi bi-clipboard"></i> Copy
+    </button>
+  </div>
+  <div class="form-text">Anyone with this link can view a read-only version of this recipe.</div>
+  <div class="form-check mt-2">
+    <input class="form-check-input" type="checkbox" id="shareNotesSwitch-{{ id }}"
+           {% if share_notes %}checked{% endif %}
+           hx-post="{% url 'recipe-toggle-share-notes' id %}"
+           hx-target="#public-share-{{ id }}"
+           hx-swap="outerHTML"
+           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <label class="form-check-label" for="shareNotesSwitch-{{ id }}">Also include the notes section on the public page</label>
+  </div>
+  {% endif %}
+</div>

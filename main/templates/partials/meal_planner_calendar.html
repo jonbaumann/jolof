@@ -1,0 +1,113 @@
+<span id="planner-nav" data-nav-date="{{ current_date|date:'Y-m-d' }}" hidden></span>
+
+<!-- Real-time poll: re-fetches the planner every few seconds so changes made
+     from another tab/device (or a shared meal-plan-group member) show up
+     without a manual refresh. Paused mid-drag / while a hover card is open
+     via plannerShouldPoll() (defined in meal_planner.html) so it can't yank
+     the DOM out from under an in-progress interaction. -->
+<div hx-get="{% url 'meal-planner' %}?date={{ current_date|date:'Y-m-d' }}&poll=1&v={{ planner_version }}"
+     hx-trigger="every 3s[plannerShouldPoll()]"
+     hx-target="#calendar-container"
+     hx-swap="innerHTML"
+     hidden></div>
+
+<!-- ===== Desktop / large screens: two-week grid ===== -->
+<div class="d-none d-lg-block">
+
+  <!-- Navigation -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <a class="btn btn-outline-secondary btn-sm" href="#"
+       hx-get="{% url 'meal-planner' %}?date={{ prev_date }}"
+       hx-target="#calendar-container"
+       hx-swap="innerHTML">
+      <i class="bi bi-chevron-left"></i>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <h5 class="mb-0">{{ period_label }}</h5>
+      <a class="btn btn-sm btn-outline-primary" href="#"
+         hx-get="{% url 'meal-planner' %}?date={{ today_date }}"
+         hx-target="#calendar-container"
+         hx-swap="innerHTML">
+        Today
+      </a>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="#"
+       hx-get="{% url 'meal-planner' %}?date={{ next_date }}"
+       hx-target="#calendar-container"
+       hx-swap="innerHTML">
+      <i class="bi bi-chevron-right"></i>
+    </a>
+  </div>
+
+  {% for week in weeks %}
+  <div class="card shadow-sm mb-3 planner-week-card">
+    <div class="card-header py-2">
+      <span class="planner-week-label">{{ week.label }}</span>
+    </div>
+    <div class="card-body p-0" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+      <div class="d-flex planner-week-grid">
+
+        {% for day in week.days %}
+        <div class="flex-fill planner-day-col{% if day.is_today %} planner-today-col{% endif %}">
+
+          <!-- Day header -->
+          <div class="planner-day-header{% if day.is_today %} planner-today-header{% endif %}">
+            <div class="planner-day-name">{{ day.day_name }}</div>
+            {% if day.is_today %}
+            <div class="planner-today-badge">{{ day.day_number }}</div>
+            {% else %}
+            <div class="planner-day-num">{{ day.day_number }}</div>
+            {% endif %}
+            <div class="planner-month-name">{{ day.month_name }}</div>
+          </div>
+
+          <!-- Meal slots -->
+          {% include 'partials/meal_planner_day_slots.html' %}
+
+        </div>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- ===== Mobile / small screens: single-day view ===== -->
+<div class="d-lg-none">
+
+  <!-- Day navigation -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <a class="btn btn-outline-secondary" href="#"
+       hx-get="{% url 'meal-planner' %}?date={{ mobile_prev_date }}"
+       hx-target="#calendar-container"
+       hx-swap="innerHTML"
+       aria-label="Previous day">
+      <i class="bi bi-chevron-left"></i>
+    </a>
+    <div class="text-center">
+      <div class="planner-mobile-date{% if current_day.is_today %} text-primary{% endif %}">{{ current_day_label }}</div>
+      <a class="btn btn-sm btn-outline-primary mt-1" href="#"
+         hx-get="{% url 'meal-planner' %}?date={{ today_date }}"
+         hx-target="#calendar-container"
+         hx-swap="innerHTML">
+        Today
+      </a>
+    </div>
+    <a class="btn btn-outline-secondary" href="#"
+       hx-get="{% url 'meal-planner' %}?date={{ mobile_next_date }}"
+       hx-target="#calendar-container"
+       hx-swap="innerHTML"
+       aria-label="Next day">
+      <i class="bi bi-chevron-right"></i>
+    </a>
+  </div>
+
+  <div class="card shadow-sm planner-week-card{% if current_day.is_today %} planner-today-col{% endif %}">
+    <div class="card-body p-2 planner-mobile-day">
+      {% include 'partials/meal_planner_day_slots.html' with day=current_day %}
+    </div>
+  </div>
+
+</div>

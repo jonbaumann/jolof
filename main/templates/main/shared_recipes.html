@@ -1,0 +1,17 @@
+{% extends 'main/base.html' %}
+{% block title %}Shared Recipes{% endblock %}
+{% block content %}
+<h3>Shared Recipes</h3>
+<p class="text-secondary">
+    Every recipe with a live "Make Public" link. Anyone holding one of these URLs can
+    read the recipe without logging in.
+</p>
+
+<div id="shared-recipes-body">
+    {% include 'partials/shared_recipes_body.html' %}
+</div>
+
+<a href="{% url 'misc-tools' %}" class="btn btn-secondary mt-4">
+    <i class="bi bi-arrow-left"></i> Back to Misc. Tools
+</a>
+{% endblock %}

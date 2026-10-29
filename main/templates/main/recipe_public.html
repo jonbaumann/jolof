@@ -1,0 +1,49 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block title %}{{ name }}{% endblock %}
+{% block extra_head %}
+    <meta name="robots" content="noindex, nofollow">
+{% endblock %}
+{% block content %}
+    <div class="container">
+    <div class="col p-2">
+        <h2 class="mb8">{{ name }}</h2>
+        <hr>
+    </div>
+    <div class="row">
+        <div class="col-sm-12 col-md-8 col-lg-6 pb-2">
+            <div class="row">
+                <div class="col">
+                    <h4 class="mb8">Description:</h4> {{ description|linebreaks }}
+                </div>
+            </div>
+            {% if url %}
+            <div class="row">
+                <div class="col">
+                    <a href="{{ url }}" target="_blank" rel="noopener noreferrer" class="text-break">{{ url }}</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col col-md-6 style">
+            {% if image %}
+                <img src="{{ image.url }}" width="300px">
+            {% else %}
+                <img src="{% static '/fork_knife.svg' %}" width="300px">
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col pt-3">
+            <h3 class="mb8">Ingredients:</h3> {{ ingredients|linebreaks }}
+            <br>
+            <h3 class="mb8">Instructions:</h3> {{ instructions|linebreaks }}
+            {% if notes %}
+            <br>
+            <h3 class="mb8">Notes:</h3> {{ notes|linebreaks }}
+            {% endif %}
+            <br><br>
+        </div>
+    </div>
+    </div>
+{% endblock %}
